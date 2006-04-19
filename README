@@ -1,0 +1,130 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=1522
+
+  Features:                                            *WW_Features* {{{~
+
+   -   Navigate and manage windows and layouts with blinding speed!
+
+   -   Multiple window operations are faster and easier because it creates
+       a window navigation and management mode where all window commands
+       are familiar single chars,  i.e.  h,H,^H  and j,J,^J  etc.  If you
+       weren't using Vim in full-screen mode, you'll start considering it.
+
+   -   More added functionality:
+
+       -   Better [im]movability:
+
+           -   Enhanced push/drag for windows and buffers.
+
+           -   Push/drag/exchange buffers between windows, and windows
+               between tabs.  Use adjacent tabs as if they were extensions
+               of the current visible screen.
+           
+           -   Constrained size and placement.  Windows can be 'attached'
+               to walls or other windows.
+
+       -   Quick search/jump to any window in any tab by giving the first
+           unique char(s).  It jumps to a buffer's window, instead of the
+           default action of editing buffers in the current window.
+
+       -   More intuitive for many operations:
+           
+           -   Incremental resizing is easier, using the [HJKL] and
+               [^h^j^k^l].
+
+           -   Resize in the direction specified, unlike  wincmd + - < > 
+
+           -   Windows move/push past each other more like you'd expect.
+               They can push 'between', instead of just 'maximize at far
+               side'.
+
+       -   Other usability stuff:
+
+           -   A window-level jump list for ^I/^O  movement.
+
+           -   O/^O  as a tab-capable alternative to ^Wo .
+
+           -   Various shortcuts to help keep you from breaking your
+               stride, i.e. to  :edit,  :ex  mode, sessions, macros, remapping
+
+   -   All the commands are presented as a prompt menu in the command line
+       so forgetting stuff isn't a problem.
+
+   -   Many of the commands are the same as the default Vim window  ^W  and
+       'wincmd' for easy transition, others are shifted around to be more
+       consistent.
+
+   -   Different invocation modes:  |WW_timeoutlen| for menu, key pass-through.
+       The goal is to have the menu mode there when you want it, and keep
+       quiet otherwise.  Experiment with the different methods to find
+       what works best for you.
+
+
+
+  Useful Examples:                                            *WW_Useful_Examples* {{{~
+
+    ... Or, 'How is this going to help me?'
+
+
+    Ergonomics:
+
+        Overall speed dealing with multiple windows.  Try it out:
+
+        -   Start the WinWalker menu, ^W
+        -   Open a new tab with  'N'
+        -   Open a few windows with  'n' and 'v'
+        -   Jump around a little with  '[hljk]'
+        -   Put some files in them with 'e'
+        -   Push some around with '[HLJK]'
+        -   Smack them all down with 'q'
+
+        By now you should have a feel for the difference it makes to have
+        single keys to deal with the window system.
+
+
+    AutoResizing:
+
+        -   Your screen/terminal/GUI size will no longer cramp your style.
+            Create windows that are always big enough.
+
+            Example:  You have several windows open, vertical and
+            horizontal, which you set to 80 columns, but you only have
+            120 or whatever.
+
+            -   Quickly visit each window, set the dimensions with 'c'.
+                See |WW_Misc_Menu| => |WW_presets| if you want to change
+                the values.
+            
+            -   For more individualized sizing,  'grow' the window to
+                whatever size makes sense, and use the
+                |WW_Attach_Constrain_Menu| -> lc 'lock columns' (and/or
+                'll') command to cause the window to resize itself to the
+                current size each time it is entered.
+
+            Now all those windows will resize themselves each time they are
+            entered.
+
+    Templates:
+
+    -   Store a tab to a session with the windows arranged how you
+        want.
+
+    -   Create a macro key to retrieve the template like:
+
+        <F2>    srsessname^M
+
+                s               save menu
+                 r              restore
+                  sessname      name of the session (without Session. or .vim )
+                          ^M    literal carriage return, with ^V^M or ^Q^M
+                    
+
+    Keeping Track Of Buffers:
+
+        If you're using TabLineSet.vim with the verbose option, you'll be
+        able to see all open buffers in the tabline (especially if you have
+        the 'Tabline wrapping patch' installed).
+
+        The find, '/', command will show you all loaded buffers, or '?' for
+        all buffers.
+
+
