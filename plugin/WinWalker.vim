@@ -14,27 +14,40 @@
 "
 " Version:		1.0		Wed Apr 19, 04/19/2006 4:25:30 AM
 " 						-	Initial release
+" 				1.1		Fri Apr 21, 04/21/2006 1:33:54 PM
+" 						-	Added help extraction to standard help
+" 						-	Tweaked to handle Taglist.vim
 "
 "
 " }}}
 " Help Start:
+"*WinWalker.txt* : Vim windows navigator/manager 
 "
 "
+"	Table Of Contents: ~
 "
-"                  WinWalker.vim : Vim windows navigator/manager 
+"	|WW_Features|
+"	|WW_Initial_Set_Up|
+"	|WW_Commands|
+"		|WW_Initial_Set_Up|
+"		|WW_Main_Menu|
+"		|WW_Misc_Menu|
+"		|WW_Tab_Menu|
+"		|WW_Customizing|
+"	|WW_Notes_Other_Bugs|
 "
-" (Move to a topic and press space to open a fold.  Use :set nofoldenable to
-" open all folds permanently.)
 "
-"  Features:                                                           {{{
+" (Use the above tags, or move to a topic fold and press space to open a
+" fold.  Use :set nofoldenable to open all folds permanently.)
 "
-"	-	Navigate and manage windows with blinding speed!  Create elegant
-"		layouts and complete messes faster than ever before!
+"  Features:                                            *WW_Features* {{{~
 "
-"	-	Multiple window operations are faster and easier because it creates a
-"		window navigation and management mode where all window commands are
-"		familiar single chars,  i.e.  h,H,^H  and j,J,^J  etc.  If you weren't
-"		using Vim in full-screen mode, you'll start considering it.
+"	-	Navigate and manage windows and layouts with blinding speed!
+"
+"	-	Multiple window operations are faster and easier because it creates
+"		a window navigation and management mode where all window commands
+"		are familiar single chars,  i.e.  h,H,^H  and j,J,^J  etc.  If you
+"		weren't using Vim in full-screen mode, you'll start considering it.
 "
 "	-	More added functionality:
 "
@@ -43,8 +56,8 @@
 "			-	Enhanced push/drag for windows and buffers.
 "
 "			-	Push/drag/exchange buffers between windows, and windows
-"				between tabs.  Use adjacent tabs as if they were extensions of
-"				the current visible screen.
+"				between tabs.  Use adjacent tabs as if they were extensions
+"				of the current visible screen.
 "
 "		-	Quick search/jump to any window in any tab by giving the first
 "			unique char(s).  It jumps to a buffer's window, instead of the
@@ -52,7 +65,8 @@
 "
 "		-	More intuitive for many operations:
 "			
-"			-	Incremental resizing is easier, using the [HJKL] and [^h^j^k^l].
+"			-	Incremental resizing is easier, using the [HJKL] and
+"				[^h^j^k^l].
 "
 "			-	Resize in the direction specified, unlike  wincmd + - < > 
 "
@@ -66,36 +80,36 @@
 "
 "			-	O/^O  as a tab-capable alternative to ^Wo .
 "
-"	-	All the commands are presented as a prompt menu in the command line so
-"		forgetting stuff isn't a problem.
+"	-	All the commands are presented as a prompt menu in the command line
+"		so forgetting stuff isn't a problem.
 "
 "	-	Many of the commands are the same as the default Vim window  ^W  and
 "		'wincmd' for easy transition, others are shifted around to be more
 "		consistent.
 "
-"	-	Different invocation modes:  timeout for menu, key pass-through.  The
-"		goal is to have the menu mode there when you want it, and keep quiet
-"		otherwise.  Experiment with the different methods to find what works
-"		best for you.
+"	-	Different invocation modes:  timeout for menu, key pass-through.
+"		The goal is to have the menu mode there when you want it, and keep
+"		quiet otherwise.  Experiment with the different methods to find
+"		what works best for you.
 "
 "
 " }}}
 "
 "
 "
-"	Initial Set Up:                                    					{{{
+"	Initial Set Up:                                 *WW_Initial_Set_Up* {{{~
 "
 "		-	Put this and dependency files into your plugin directory.
 "
 "		-	Set up a key map.  I.e.
-"
+">
 "				nmap <silent> <Leader>w :call WinWalkerMenu()<CR>
-"
-"					Default.  (Remember, <Leader> is set with the 'mapleader'
-"					variable; Vim default is  '\' .) I like it mapped to ^W,
-"					since I'm used to hitting ^W for windows stuff, and
-"					WinWalker is mostly a superset of the standard ^W/wincmd
-"					commands.
+"<
+"					Default.  (Remember, <Leader> is set with the
+"					'mapleader' variable; Vim default is  '\' .) I like it
+"					mapped to ^W, since I'm used to hitting ^W for windows
+"					stuff, and WinWalker is mostly a superset of the
+"					standard ^W/wincmd commands.
 "
 "		-	Look through the {m}isc menu for other options to change.
 "
@@ -104,35 +118,35 @@
 "
 "
 "
-"                             Commands:                                 {{{
+"                             Commands:                   *WW_Commands*  {{{~
 "
 "
-"	Starting:                                                       {{{
-"
+"	Starting:                                          *WW_Starting*   {{{~
+">
 "		nnoremap <silent> <C-W> :call WinWalkerMenu()<CR>
-"
+"<
 "			<C-W>
 "
 "				Type <C-W> and note the delay (~1/2 sec) before the menu
-"				starts.  Type <C-W><C-W> (or whatever) fast together, and see
-"				whether you want more or less time to type the second char
-"				before the menu starts.  Change the ttimeout in {m}isc submenu
-"				-> {t}timeout.
+"				starts.  Type <C-W><C-W> (or whatever) fast together, and
+"				see whether you want more or less time to type the second
+"				char before the menu starts.  Change the ttimeout in {m}isc
+"				submenu -> {t}timeout.
 "
 "			<C-W><SPACE>
 "
-"				Start the menu immediately without the initial ttimeout.  Set
-"				ttimeout to 0 for the same effect.
+"				Start the menu immediately without the initial ttimeout.
+"				Set ttimeout to 0 for the same effect.
 "
 "				You can set certain keys to bypass/drop-out of the menu
 "				automatically via g:WinWalker_dropout_keys list variable.
 "				I.e. if  ^W  is added to the list, then  ^W^W  from Normal
 "				mode will move to the next window just as the default  ^W^W
-"				command does.
-" }}}
+"				command does.  
+"}}}
 "
 "
-"	Main Menu: 	{{{
+"	Main Menu: 	                                     *WW_Main_Menu* {{{~
 "
 "
 "		{w}/{W}/{<C-W>}indow=>Nxt/Prv
@@ -157,23 +171,27 @@
 "			-	Lowercase='move cursor to another window'
 "			-	Uppercase='push the current window up/down/left/right'
 "			-	Control='exchange buffers, keep focus with buffer'
-"				(when exchanging to an adjacent tab, it relocates the buffer
-"				into a new window, since it's more confusing otherwise).
+"				(when exchanging to an adjacent tab, it relocates the
+"				buffer into a new window, since it's more confusing
+"				otherwise).
+"			-	Arrow keys are mapped to analogous [jkhl] commands, i.e.
+"				<S-UP> is mapped to 'K'.
+"
 "
 "		{r}/{R}=rotate wins/buffers
 "
 "			{r}	Rotates the current window according to new/vnew.  It isn't
-"				smart about detecting  the orientation of a window it hasn't
-"				seen before, so you might have to hit "r" twice to get it
-"				started.
+"				smart about detecting  the orientation of a window it
+"				hasn't seen before, so you might have to hit "r" twice to
+"				get it started.
 "
-"			{R}	Rotate all the buffers around the screen without changing the
-"				window layout.
+"			{R}	Rotate all the buffers around the screen without changing
+"				the window layout.
 "
 "		{o}/{O}='only'/clone
 "
-"			{o}	The default 'wincmd' behavior where all windows are closed but
-"				the current.  
+"			{o}	The default 'wincmd' behavior where all windows are closed
+"				but the current.  
 "				
 "			{O}	Clone the current buffer in it's own new tab.  This is for
 "				when you want to temporarily maximize the current window
@@ -183,9 +201,9 @@
 "			
 "		{<C-I>}/{<C-O>}=jump forward/back
 "
-"				Traverses WinWalker's window-level jump list.  (As opposed to
-"				the Normal mode ^I/^O, which traverses a buffer-level jump
-"				list.)
+"				Traverses WinWalker's window-level jump list.  (As opposed
+"				to the Normal mode ^I/^O, which traverses a buffer-level
+"				jump list.)
 "
 "		{t}ab menu
 "			
@@ -220,10 +238,10 @@
 "
 "		{/}{?}find win
 "
-"				Submenu of available/loaded buffers.  Typing the first one or
-"				so unique characters jumps to the matched window.  Buffer name
-"				or number can be selected. {?} includes hidden buffer names
-"				also.
+"				Submenu of available/loaded buffers.  Typing the first one
+"				or so unique characters jumps to the matched window.
+"				Buffer name or number can be selected. {?} includes hidden
+"				buffer names also.
 "
 "		{c}/{C}=>set/preset (lines,cols)
 "
@@ -233,8 +251,8 @@
 "
 "		{s}/{S}=>save/restore sizes
 "
-"				Saves a snap shot of the current window (winrestcmd()).  When
-"				restoring, it doesn't handle new or deleted windows.
+"				Saves a snap shot of the current window (winrestcmd()).
+"				When restoring, it doesn't handle new or deleted windows.
 "
 "		send :{q}uit/:{Q}uit!/{<C-Q>}=tabclose!/{Z}Z
 "				
@@ -242,21 +260,27 @@
 "
 "		{<SPACE>}/{<ESC>}=>Exit
 "
-"				Exit the WinWalker subsytem.  <C-C> and <BS> also work.
-"				If <C-W><SPACE>, <C-W><C-SPACE>, <C-W><CR>, <C-W><C-CR> are
+"				Exit the WinWalker subsytem.  <C-C> and <BS> also work.  If
+"				<C-W><SPACE>, <C-W><C-SPACE>, <C-W><CR>, <C-W><C-CR> are
 "				entered before the timeout (before the menu starts), it
 "				bypasses the timeout, and starts the menu immediately.
+"
+" 		Any other keys
+"
+" 				... are delivered to Normal mode, and the menu exits.  So,
+" 				typing ^U, ^D, ^F, ^B  exits WinWalker, and scroll the
+" 				window.
 "
 " }}}
 "
 "
-"	Misc Menu: {{{
+"	Misc Menu:                                        *WW_Misc_Menu* {{{~
 "
 "
 "		{g}row
 "
-"			Toggle whether the [jkhl] uppercase and control keys are used to
-"			resize windows.
+"			Toggle whether the [jkhl] uppercase and control keys are used
+"			to resize windows.
 "
 "		{w}rap
 "
@@ -272,22 +296,22 @@
 "		{h}ighlight current win 
 "
 "			Toggle highlighting of the current window.  The highlighting is
-"			done to help distinguish which window is current, since the cursor
-"			won't be visible.
+"			done to help distinguish which window is current, since the
+"			cursor won't be visible.
 "
 "		{e}mpty files
 "
-"			Same as highlighting, above, but add some text to empty files to
-"			help distinguish as current window.
+"			Same as highlighting, above, but add some text to empty files
+"			to help distinguish as current window.
 "
 "		{t}timeout
 "
 "			Set the timeout used for the wait for the key press after ^W
 "			(or whatever).  If the key is received before the timeout, the
-"			command is executed and control returns immediately.  If timeout
-"			is reached, the main menu starts and subsequent commands require
-"			only one key.  Control is kept by WinWalker until the menu is
-"			exited.
+"			command is executed and control returns immediately.  If
+"			timeout is reached, the main menu starts and subsequent
+"			commands require only one key.  Control is kept by WinWalker
+"			until the menu is exited.
 "			This also affects the timeout for ambiguous matches in the
 "			{/}find command.
 "
@@ -301,27 +325,29 @@
 "
 "		{d}ropout keys
 "
-"			Change keys in the list which causes the main menu to exit after
-"			execution.
+"			Change keys in the list which causes the main menu to exit
+"			after execution.
 "
 "		Note: g:WinWalker_rc is updated when the Misc menu is exited.
 "
 "}}}
 "
 "
-"	Tab Menu:                                                         {{{
+"	Tab Menu:                                         *WW_Tab_Menu*   {{{~
 "
-"				Note:  The prev/next commands for tabs are down in a submenu
-"				because I found that in general, it's more consistent to move
-"				through tabs using the window left/right + wrap=tabs.
+"				Note:  The prev/next commands for tabs are down in a
+"				submenu because I found that in general, it's more
+"				consistent to move through tabs using the window left/right
+"				+ wrap=tabs.
 "
 "		{h}/{l}
-"				Go to prev/next tab.  This is not at the top level because I
-"				found it easier and more consistent to move through tabs with
-"				'wrap' set to 'tabs'.
+"				Go to prev/next tab.  This is not at the top level because
+"				I found it easier and more consistent to move through tabs
+"				with 'wrap' set to 'tabs'.
 "
 "		{H}/{L}
-"				Move/rotate tab.  Changes the order of the tab in the tab list.
+"				Move/rotate tab.  Changes the order of the tab in the tab
+"				list.
 "
 "		{n}ew tab
 "
@@ -336,78 +362,92 @@
 " }}}
 "
 "
-"	Customizing: {{{
+"	Customizing:                                     *WW_Customizing* {{{~
 "
 "		-	g:WinWalker_rc  sets the filename for the options settings.
-"			Default is  $HOME/.WInWalker.vim .  Several of the global option
-"			variables are handled here, so they don't need to go into your
-"			.vimrc.  The  g:WinWalker_rc  file is sourced once only, when the
-"			plugin is first read when Vim starts up.
+"			Default is  $HOME/.WInWalker.vim .  Several of the global
+"			option variables are handled here, so they don't need to go
+"			into your .vimrc.  The  g:WinWalker_rc  file is sourced once
+"			only, when the plugin is first read when Vim starts up.
 "		
-"		-	Highlighting overrides can be done by copying the  s:Hi_init()  function
-"			into your  .vimrc , and making changes there. 
+"		-	Highlighting overrides can be done by copying the  s:Hi_init()
+"			function into your  .vimrc , and making changes there. 
 "
 "		-	You can change which keys immediately return to Vim Normal mode
 "			with:
-"				
+">				
 "				g:WinWalker_dropout_keys = [ "\<C-W>", "\<C-P>" ]
-"
-"		-	Single keys can be remapped via  g:WinWalker_remap  dict var.  You can put
-"			it into your .vimrc, but it probably easier to use it through the
-"			{m}isc menu.
+"<
+"		-	Single keys can be remapped via  g:WinWalker_remap  dict var.
+"			You can put it into your .vimrc, but it probably easier to use
+"			it through the {m}isc menu.
 "	
-" }}}
+" End Costimizing fold }}}
 "
-"  End Commands fold }}}
-"
-"
-"
-"{{{	Notes, Other, Bugs:
+" End Commands fold }}}
 "
 "
-"	Notes:
 "
-"	-	Since this uses Vim7 tabs extensively, see  TabLineSet.vim  for better
-"		visual information in the tabs themselves.
+"{{{	*WW_Notes_Other_Bugs*
+"
+"
+"	Notes: ~
+"
+"	-	Since this uses Vim7 tabs extensively, see  TabLineSet.vim  for
+"		better visual information in the tabs themselves.
 "
 " 	-	Don't map a key that also has other operator-pending maps, i.e.
-" 		trying to map ^W  while there were still other mappings like custom ^W^O
-" 		will cause it to wait (forever, possibly) for the second key, an so
-" 		keeps the main menu from starting.
+" 		trying to map ^W  while there were still other mappings like custom
+" 		^W^O will cause it to wait (forever, possibly) for the second key,
+" 		an so keeps the main menu from starting.
 "
 "	-	Removing a tab, or re-arranging windows can invalidate parts of the
-"		jumplist, which will become somewhat unpredictable until it clears all
-"		the bad jumps as they are encountered.
+"		jumplist, which will become somewhat unpredictable until it clears
+"		all the bad jumps as they are encountered.
 "
 "
-"	Other:
+"	Other: ~
 "
-"		-	Make a test tab:
-"
+"		-	Make some test tabs:
+">
 "			map ,t <c-w>tn<space>nvnv
+"
+"			map ,tt <C-W>N:Tlist<CR>hn:Explore<CR><CR>l:edit somefile3<CR><CR><SPACE>asome stuff<ESC>
+"<
+"			In the second example, I'm not really sure why it requires two
+"			<CR>s to complete the input, but I suspect it is related to
+"			input().
 "
 "		-	Mappings to resize with shift-arrows from Normal mode, using the
 "			pass-through of the default  wincmd  resizing commands:
-"
-"			nmap <s-up> <c-w>+
-"			nmap <s-down> <c-w>-
-"			nmap <s-left> <c-w><
-"			nmap <s-right> <c-w>>
-"
+">
+"			nmap <c-up> <c-w>+
+"			nmap <c-down> <c-w>-
+"			nmap <c-left> <c-w><
+"			nmap <c-right> <c-w>>
+"<
 "			Mappings which use the modified resize commands:
-"
-"			nmap <s-up> <c-w>g<c-k>
-"			nmap <s-down> <c-w>g<c-j>
-"			nmap <s-left> <c-w>g<c-h>
-"			nmap <s-right> <c-w>g<c-l>
-"
+">
+"			nmap <c-up> <c-w>g<c-k>
+"			nmap <c-down> <c-w>g<c-j>
+"			nmap <c-left> <c-w>g<c-h>
+"			nmap <c-right> <c-w>g<c-l>
+"<
 "			If ttimeout is 0, these maps will have to explicitly exit the
 "			menu to be used from Vim Normal mode directly.
 "
-"			nmap <s-up> <c-w>g<c-k><space>
-"			nmap <s-down> <c-w>g<c-j><space>
-"			nmap <s-left> <c-w>g<c-h><space>
-"			nmap <s-right> <c-w>g<c-l><space>
+">
+"			nmap <expr> <s-up> ( g:WinWalker_opts.ttimeout ? '<c-w>gK' : '<c-w>gK<space>' )
+"			nmap <expr> <s-down> ( g:WinWalker_opts.ttimeout ? '<c-w>gJ' : '<c-w>gJ<space>' )
+"			nmap <expr> <s-left> ( g:WinWalker_opts.ttimeout ? '<c-w>gH' : '<c-w>gH<space>' )
+"			nmap <expr> <s-right> ( g:WinWalker_opts.ttimeout ? '<c-w>gL' : '<c-w>gL<space>' )
+"
+"			nmap <expr> <c-up> ( g:WinWalker_opts.ttimeout ? '<c-w>g<c-k>' : '<c-w>g<c-k><space>' )
+"			nmap <expr> <c-down> ( g:WinWalker_opts.ttimeout ? '<c-w>g<c-j>' : '<c-w>g<c-j><space>' )
+"			nmap <expr> <c-left> ( g:WinWalker_opts.ttimeout ? '<c-w>g<c-h>' : '<c-w>g<c-h><space>' )
+"			nmap <expr> <c-right> ( g:WinWalker_opts.ttimeout ? '<c-w>g<c-l>' : '<c-w>g<c-l><space>' )
+"<
+"
 "
 "
 "	Bugs:
@@ -439,12 +479,16 @@
 "}}} End Notes fold
 "
 "
+"vim7:tw=78:ts=8:ft=help:norl::ts=4:sw=4:foldenable:foldopen=hor,tag,jump,mark,search:foldclose=all:foldmarker={{{,}}}:foldmethod=marker
 " Help End:
 "
 "
 "	To Do:
 "
 "	-	Trapping enough events with eventignore?
+"
+"	-	Starting Taglist from the ':' passthrough freaks out with 'ml_get'
+"		errors.
 "
 "
 
@@ -702,10 +746,12 @@ function! WinWalkerMenu( ... )
 			"
 			" ----------------------------------------
 			" Help
-			call WinWalker_help_extract()
+			"
+			help WinWalker
 			" Probably should do some cleanup ops before exiting:
 			call Clear_cmd_window()
 			return
+
 
 		elseif l:inp =~ '[e;:]'
 			"
@@ -732,8 +778,8 @@ function! WinWalkerMenu( ... )
 				" the user attemps.
 				"
 			try
-				let ex_input = input( fake_prompt . pre_enter, "", compete_opt )
 				let g:redir_tmp = ''
+				let ex_input = input( fake_prompt . pre_enter, "", compete_opt )
 				if ex_input != ''
 					redir => g:redir_tmp
 					exe pre_enter . ex_input
@@ -1027,6 +1073,14 @@ function! WinWalkerMenu( ... )
 			let w_old = winnr()
 			let lines_old = winheight(winnr())
 			let cols_old = winwidth(winnr())
+
+			" Some app.s like 'Taglist' will self-destruct if they are fiddled
+			" with, so let's start with 'bufhidden', and eventignore.
+			let save_bufhidden = &bufhidden
+			set eventignore=
+			let save_eventignore = &eventignore
+			set eventignore=BufEnter,BufLeave,WinEnter,WinLeave
+
 			if w_other < 1
 				if l:inp ==# 'H' && GetWinAdjacent( 'left' ) < 1
 							\ &&  GetWinAdjacent( 'up' ) < 1
@@ -1125,6 +1179,9 @@ function! WinWalkerMenu( ... )
 				if cols_old > winwidth(winnr()) && cols_old < &columns
 					exe 'silent vert resize ' . cols_old
 				endif
+
+				let &bufhidden = save_bufhidden
+				let &eventignore = save_eventignore
 
 	 		endif " [JK] handling,  w_other <?? 1
 
@@ -1432,7 +1489,9 @@ function! WinWalkerMenu( ... )
 		elseif l:inp =~  "[\eq]" || l:inp ==  "\<C-C>"
 			break
 		else
-			let s:errmsg = 'Invalid cmd (' . l:inp . ')'
+			"let s:errmsg = 'Invalid cmd (' . l:inp . ')'
+			exe 'silent normal! ' . l:inp
+			break
 		endif
 
 
@@ -1761,7 +1820,7 @@ function! s:Tab_menu()
 		endif
 		call Char_menu_wrapAdd( l, "{h}/{l}=go prev/next" )
 		call Char_menu_wrapAdd( l, "{H}/{L}=move prev/next" )
-		call Char_menu_wrapAdd( l, "{n}ew tab" )
+		call Char_menu_wrapAdd( l, "{n}/{N}ew tab" )
 		call Char_menu_wrapAdd( l, "{t}ab table" )
 		call Char_menu_wrapAdd( l, "{q}/{C-Q>=tabclose/tabclose!" )
 
@@ -1805,13 +1864,13 @@ function! s:Tab_menu()
 			else
 				exe 'tabmove ' . tabpagenr()
 			endif
-		elseif l:inp ==# 'n'
+		elseif l:inp =~# '[nN]'
 			tabnew
 		elseif l:inp ==# "q"
 			tabclose
 		elseif l:inp ==# "\<C-Q>"
 			tabclose!
-		elseif l:inp ==# ' ' || l:inp == "\<ESC>"
+		elseif l:inp ==# ' ' || l:inp == "\<ESC>" || l:inp == "\<C-C>"
 			break
 		else
 			let s:errmsg .= " Invalid command (" . l:inp . ") "
@@ -2024,10 +2083,14 @@ function! s:Pick_buf( )
 
 		let s:errmsg = ''
 
+		" So far this is working.  After going through the pick dialog, it
+		" will return and exit out of the menu subsystem.
 		if s:Unhuman_input
-			let inp = s:Recheck_unhuman()
-			if inp == 0 | return | endif
-		else
+			"let inp = s:Recheck_unhuman()
+			"let s:Unhuman_input = 0
+			"if inp == 0 | return | endif
+		endif
+		"else
 
 			call Char_menu_wrapAdd( l, ' Enter first uniq char(s), {?} to toggle hidden: ' )
 
@@ -2035,7 +2098,7 @@ function! s:Pick_buf( )
 						\ , "{<ESC>} {<C-C>} {<DEL>} {;}"
 						\ , last_inp )
 			let last_inp = inp
-		endif
+		"endif
 
 		if inp == '?'
 			if s:buf_check == 'loaded'
@@ -2141,7 +2204,46 @@ let s:Arrow_key_trans = {
 let s:This_script_fname = expand("<sfile>:p")
 " fnamemodify( ... ,":t")
 
+
+
 function! WinWalker_help_extract()
+
+	try
+		silent 1 new
+		exe "silent read " . s:This_script_fname
+		silent 1,/^" Help Start:/ d
+		silent /^" Help End:/,$ d
+		silent 1,$ s/^"//
+	catch
+		echomsg 'WinWalker_help_extract() failed read/clean.'
+		return
+	endtry
+
+	let pathlist = [ fnamemodify( s:This_script_fname, ':h' ) . '/..' ]
+	let pathlist += split( &runtimepath, ', *' )
+
+	for docpath in pathlist
+		let docpath = docpath . '/' . 'doc'
+		if isdirectory( docpath )
+			let cmd = 'silent write! ' . docpath . '/WinWalker.txt'
+			exe cmd
+			let cmd = 'silent helptags ' . docpath
+			exe cmd
+			silent bwipeout!
+			return
+		endif
+	endfor
+
+	echomsg 'WinWalker_help_extract() failed to install WinWalker.txt.'
+	silent bwipeout!
+
+endfunction
+
+call WinWalker_help_extract()
+
+
+
+function! WinWalker_help_extract_tmp_buf()
 
 	" Grrrr!  No local mode for these:
 	let s:restore_foldopen = &foldopen
@@ -2167,7 +2269,7 @@ function! WinWalker_help_extract()
 	silent setlocal nomodifiable
 	silent setlocal readonly
 	silent setlocal buftype=nofile
-	silent setlocal filetype=text
+	silent setlocal filetype=help
 	silent setlocal noswapfile
 	silent setlocal foldenable
 	silent set foldopen=hor,jump,mark,search
@@ -2362,5 +2464,25 @@ function! s:Add_valid( l, i )
 endfunction
 
 
-" vim6:fdm=marker:foldenable:ts=4:sw=4
+
+function! s:Expander()
+
+	let name = expand("<cfile>")
+
+	let list = glob( expand("<cfile>") . "*" )
+	if ( list =~ "\n" )
+		echo list
+		"let c = getchar()
+	else
+		let stuff = strpart( list, strlen( name ) ) 
+		execute "normal A" . stuff . "\<ESC>"
+	endif
+
+	startinsert!
+
+endfunction
+
+
+
+" vim7:fdm=marker:foldenable:ts=4:sw=4
 
