@@ -45,7 +45,7 @@ let g:CMu_menu_hl_text		= 'Directory'
 let g:CMu_menu_hl_standout	= 'WarningMsg'
 let g:CMu_menu_hl_selection	= 'WildMenu'
 let g:CMu_menu_hl_error		= 'Error'
-let g:CMu_timeout			= 600
+let g:CMu_timeoutlen		= 600
 
 
 let s:menu_matches_full = 0
@@ -159,7 +159,7 @@ function! Char_menu( menu_str, ... )
 		"call Char_menu_display( a:menu_str, l:received_chars )
 
 		if s:menu_matches_full > 0  || s:menu_matches_partial == 1
-			call Peek_char_timeout_wait( g:CMu_timeout )
+			call Peek_char_timeout_wait( g:CMu_timeoutlen )
 			if getchar(1) == 0
 				break
 			endif
