@@ -8,7 +8,7 @@
 " 							  ^^^^^^^^^^^^^^^^^^^^^^^
 " 							  Comments, bugs, feedback welcome.
 " Created:		Apr, 2006
-" Updated:		Mon Apr 24, 04/24/2006 3:47:09 AM
+" Updated:		Mon Apr 24, 04/24/2006 8:38:24 AM
 " Requirements:	Vim 7
 " Dependencies:	Char_menu.vim
 "
@@ -23,11 +23,13 @@
 " 						-	switch to Unix file format
 " 						-	added session quick-save
 " 						-	revamped help and help folding
+" 				1.2.1	Mon Apr 24, 04/24/2006 8:38:24 AM
+"						-	Restore accidentally deleted function
 "
 "
 " }}}
 " Help Start:
-"*WinWalker.txt* v1.2 : Vim windows navigator/manager 
+"*WinWalker.txt* v1.2.1 : Vim windows navigator/manager 
 "
 "
 "	Table Of Contents: ~
@@ -604,7 +606,7 @@ if v:version < 700
 	finish
 endif
 
-let s:version = '1.2' 		" must be a string for searches to work
+let s:version = '1.2.1' 		" must be a string for searches to work
 
 
 nnoremap <silent> <leader>w :call WinWalkerMenu()<CR>
@@ -2284,17 +2286,18 @@ endfunction
 
 
 
-function! s:Recheck_unhuman()
-	let s:Unhuman_input = Peek_char_timeout_wait( 100 )
-	if !s:Unhuman_input 
-		"finish
-		return 0
-	endif
-	let inp = getchar()
-	if nr2char( inp ) != "" | let inp = nr2char( inp ) | endif
-	return inp
-endfunction
 
+function! s:New_window( orient )
+	if a:orient =~? '^v'
+		silent vnew
+		let tabwin = tabpagenr() . ',' . winnr()
+		let s:Win_orient[ tabwin ] = 'vertical'
+	else
+		silent new
+		let tabwin = tabpagenr() . ',' . winnr()
+		let s:Win_orient[ tabwin ] = 'horizontal'
+	endif
+endfunction
 
 
 
@@ -2417,10 +2420,17 @@ function! s:Empty_fill_fake()
 	if s:Unhuman_input | return | endif
 	let b:empty = 0
 	let label2 = s:empty_label
-	let width = winwidth( winnr() ) - 2
-	if width < strlen( label2 )
+
+	let width = winwidth( winnr() ) - 1
+
+	if &number
+		let width = width - &numberwidth - &diff - 1
+	endif
+
+	if width <= strlen( label2 )
 		let label2 = substitute( label2, ' ', '', 'g' )
 	endif
+
 	if line("$") == 1 && col("$") == 1
 		let b:empty = 1
 		exe 'silent! normal! ' . winheight(winnr()) . "a\n\eM"
