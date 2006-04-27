@@ -189,6 +189,8 @@ function! Char_menu( menu_str, ... )
 
 	echohl None
 
+	let &cmdheight = l:restore_cmdheight
+
 	return l:received_chars
 endfunction
 
@@ -350,7 +352,10 @@ endfunction
 
 
 function! Clear_cmd_window()
+	let save_cmdheight = &cmdheight
+	let &cmdheight = 1
 	exe "silent! normal! :<CR>"
+	let &cmdheight = save_cmdheight
 endfunction
 
 

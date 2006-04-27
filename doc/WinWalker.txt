@@ -1,7 +1,6 @@
-*WinWalker.txt* v1.2 : Vim windows navigator/manager 
+*WinWalker.txt* v2.0 : Vim windows navigator/manager 
 
-
-	Table Of Contents: ~
+	Table Of Contents: ~ {{{
 
 	|WW_Features|
 	|WW_Initial_Set_Up|
@@ -11,12 +10,17 @@
 		|WW_Misc_Menu|
 		|WW_Tab_Menu|
 		|WW_Save_Menu|
+		|WW_Attach_Constrain_Menu|
 		|WW_Customizing|
-	|WW_Notes_Other_Bugs|
+	|WW_Notes|
+	|WW_Other|
+	|WW_Caveats|
+	|WW_Bugs|
 
 
 	|Turn_folding_on|
 	|Turn_folding_off|
+ }}}
 
 
   Features:                                            *WW_Features* {{{~
@@ -30,13 +34,16 @@
 
 	-	More added functionality:
 
-		-	Windows are considered movable objects:
+		-	Better [im]movability:
 
 			-	Enhanced push/drag for windows and buffers.
 
 			-	Push/drag/exchange buffers between windows, and windows
 				between tabs.  Use adjacent tabs as if they were extensions
 				of the current visible screen.
+			
+			-	Constrained size and placement.  Windows can be 'attached'
+				to walls or other windows.
 
 		-	Quick search/jump to any window in any tab by giving the first
 			unique char(s).  It jumps to a buffer's window, instead of the
@@ -58,6 +65,9 @@
 			-	A window-level jump list for ^I/^O  movement.
 
 			-	O/^O  as a tab-capable alternative to ^Wo .
+
+			-	Various shortcuts to help keep you from breaking your
+				stride, i.e. to  :edit,  :ex  mode, sessions, macros, remapping
 
 	-	All the commands are presented as a prompt menu in the command line
 		so forgetting stuff isn't a problem.
@@ -200,6 +210,11 @@
 			
 				Submenu for handling tabs.  See |WW_Tab_Menu|
 
+		Window {a}ttach/Constrain menu
+
+				Submenu for setting windows attachments, fixed sizing, etc.
+				See |WW_Attach_Constrain_Menu|
+
 		{m}isc menu
 				
 				Submenu for setting options.  See |WW_Misc_Menu|
@@ -244,7 +259,6 @@
 
 				A quick set option to resize the current window to user's
 				preferred working dimensions, I.e. 80 columns, and 15 lines.
-				{C} prompts for lines and cols.
 
 		:{q}uit/:{Q}uit!/{<C-Q>}=tabclose!/{Z}Z
 				
@@ -263,6 +277,72 @@
  				... are delivered to Normal mode, and the menu exits.  So,
  				typing ^U, ^D, ^F, ^B  exits WinWalker, and scroll the
  				window.
+
+ }}}
+
+
+	Attach/Constrain Menu:                        *WW_Attach_Constrain_Menu*   {{{~
+
+		lines/{c}olumns preset
+
+				The preset is used create a standard workable size for a
+				window.  It is most useful when creating and moving around
+				a layout with multiple windows.  This will prompt for
+				{lines,cols}.  It is triggered by the 'c' command at the
+				top level.
+
+		{ll}/{lc} lock-lines/cols
+				
+				Lock the height or width at the current value.
+				
+		{a}ttach
+				
+				Attach the window to walls or other windows.
+
+				An attachment tells the window to seek a position next to a
+				wall or another window, but doesn't create any bond with
+				other window, meaning the attachment won't 'pull' the other
+				window.
+
+				The best way to decrease conflicts is to set the minimum
+				number of constraints possible.  Vim windows can have
+				constraints of their own which can interferWinWalkerWinWalker
+				e with WinWalkers (i.e. if you have two windows, one atop
+				the other, Vim causes them to share the same width, so
+				different WinWalker 'locked' column values won't result in
+				windows with different widths).
+
+				Sometimes you can get the message:
+
+					' Warning: possible window constraint conflicts.'
+
+				when there are no direct conflicts, but there are a lot of
+				windows open, and doing the auto-resize for locked line/col
+				values will fight with the Vim default window size
+				minimums.
+
+				There are some cases where the auto-resizing won't work
+				immediately, i.e. a window is trying to resize itself to a
+				locked value, and it is adjacent to the current/cursor
+				window, then the minimum Vim value for the current window
+				will take precedence.  Typing '=' in some other window can
+				give all windows a chance to update properly.
+
+				There are some cases that aren't handled:
+
+				-	A window attached to walls up/down or left/right will
+					not necessarily allow windows to 'push' (JKHL)
+					past it.  
+
+					The exchange (^J^K^H^L) command is the right choice for
+					this, and similar move-past situations.
+				
+				-	If win1 is attached upwards to the top wall, and you're
+					trying to 'push' win2 which is adjacent to win1, it can
+					fail depending on the rotation of win2 (which causes it
+					to always try to push win2 over win1).
+
+
 
  }}}
 
@@ -326,6 +406,32 @@
 			Change keys in the list which causes the main menu to exit
 			after execution.  This is most useful for when |WW_timeoutlen|
 			is set to 0.  See |WW_Customizing|
+
+		{M}acro keys
+			
+			Use this to create single key mappings to key sequence macros
+			that are given to:
+>
+				call feedkeys( sequence, 't' )
+<
+			At the moment, if you want to enter a special/control char, use
+			^V or ^Q to escape it.
+
+			Examples :
+>
+				1		vemyfile^Mc
+						Bring up your favorite file in a new window:
+							vertical new, edit 'myfile', resize to preset
+
+				2		/W
+						Jump to your favorite window from anywhere, in this
+						case 'W' matches 'WinWalker'.
+
+				<F2>	Nsrmysession^M 
+						Bring up your favorite screen/tab layout:
+						new tab, save menu, restore 'mysession'
+
+
 
 		Note: the g:WinWalker_opts.rc_file is updated when the Misc menu is
 		exited.
@@ -438,7 +544,7 @@
 {{{	*WW_Notes_Other_Bugs*
 
 
-	Notes: ~
+	Notes:     *WW_Notes* ~
 
 	-	Since this uses Vim7 tabs extensively, see  TabLineSet.vim  for
 		better visual information in the tabs themselves.
@@ -453,7 +559,7 @@
 		all the bad jumps as they are encountered.
 
 
-	Other: ~
+	Other:     *WW_Other*  ~
 
 		-	Make some test tabs:
 >
@@ -512,13 +618,23 @@
 <
 
 	-	Some apps like 'Taglist' and 'quickfix window' set 'bufhidden',
-		which interfers with window moving/exchanging.  This is mostly
+		which interferes with window moving/exchanging.  This is mostly
 		dealt with, but other app.s like 'Project.vim' reset the window
 		every time the buffer is entered, which isn't handled (probably
 		can't be without changing the application itself).
 
 
-	Bugs:~
+	Caveats:  *WW_Caveats*  ~
+		
+		Here will be listed things to keep in mind if problems should ever
+		crop up.
+
+	-	The tag jump keys are remapped for Help file types to go through the
+		WinWalker_help_tag_trap().  This should in general be an improvement,
+		but side any effects aren't known yet as of v1.3.
+
+
+	Bugs:  *WW_Bugs*  ~
 
 	-	The cmdheight isn't always restored correctly at this time.  As of
 		Vim70c, a bug exists for setting/resetting the value in different
@@ -540,9 +656,6 @@
 
 			nnoremap <silent> <c-w> :call WinWalkerMenu()<CR>
 	
-	-	Sometimes a weird delay is added to the {m}isc menu as it returns
-		to main.
-
 
 }}} End Notes fold
 
