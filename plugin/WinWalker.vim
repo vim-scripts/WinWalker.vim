@@ -1,5 +1,5 @@
 
-let g:WinWalker_debug = 'jumplist'	"jumplist, events
+let g:WinWalker_debug = ''	"jumplist, events
 " Header {{{
 "------------------------------------------------------------------------------
 "                     WinWalker.vim : Vim windows navigator/manager {{{
@@ -10,7 +10,7 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 " 							  ^^^^^^^^^^^^^^^^^^^^^^^
 " 							  Comments, bugs, feedback welcome.
 " Created:		Apr, 2006
-" Updated:		Mon Apr 24, 04/24/2006 8:38:24 AM
+" Updated:		Tue May 16, 05/16/2006 9:15:05 AM
 " Requirements:	Vim 7
 " Dependencies:	Char_menu.vim
 "
@@ -32,15 +32,24 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "							'attached' to walls or other windows.
 " 						-	Added key feedkeys() macros
 " 						-	Sessions remember WinWalker constraints
+" 				2.1		Tue May 16, 05/16/2006 9:15:05 AM
+" 						-	added 'follow' option
+" 						-	'c' preset now sets the sticky auto-resize
+" 							line/column values
+" 						-	windows and buffers auto-resize separately
+" 						-	small cmdheight bug
+" 						-	smarter hondling of 'previous' window
+" 						-	various sizing fixes
 "
 "
 " }}}
 " Help Start:
-"*WinWalker.txt* v2.0 : Vim windows navigator/manager 
+"*WinWalker.txt* v2.1 : Vim windows navigator/manager 
 "
 "	Table Of Contents: ~ {{{
 "
 "	|WW_Features|
+"	|WW_Useful_Examples|
 "	|WW_Initial_Set_Up|
 "	|WW_Commands|
 "		|WW_Starting|
@@ -81,11 +90,16 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "				of the current visible screen.
 "			
 "			-	Constrained size and placement.  Windows can be 'attached'
-"				to walls or other windows.
+"				to walls or other windows.  Windows will resize to preset
+"				values as you move into them.  
 "
-"		-	Quick search/jump to any window in any tab by giving the first
-"			unique char(s).  It jumps to a buffer's window, instead of the
-"			default action of editing buffers in the current window.
+"			-	Windows can follow focus into new tabs.
+"
+"		-	Explore buffer list, and quick search/jump to any window in any
+"			tab by giving the first unique char(s).  It jumps to a buffer's
+"			window, instead of the default action of editing buffers in the
+"			current window.
+"
 "
 "		-	More intuitive for many operations:
 "			
@@ -114,15 +128,92 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "		'wincmd' for easy transition, others are shifted around to be more
 "		consistent.
 "
-"	-	Different invocation modes:  |WW_timeoutlen| for menu, key pass-through.
-"		The goal is to have the menu mode there when you want it, and keep
-"		quiet otherwise.  Experiment with the different methods to find
-"		what works best for you.
+"	-	Different invocation modes:  |WW_timeoutlen| for menu, key
+"		pass-through.  The goal is to have the menu mode there when you
+"		want it, and keep quiet otherwise.  Experiment with the different
+"		methods to find what works best for you.  Particularly useful for
+"		^W^P   ^W^O  ^W^I  ^W/   etc.
 "
 "
 " }}}
 "
 "
+"  Useful Examples:                                            *WW_Useful_Examples* {{{~
+"
+"	... Or, 'How is this going to help me?'
+"
+"
+"	Ergonomics:
+"
+"		Overall speed dealing with multiple windows.  Try it out:
+"
+"		-	Start the WinWalker menu, ^W
+"		-	Open a new tab with  'N'
+"		-	Open a few windows with  'n' and 'v'
+"		-	Jump around a little with  '[hljk]'
+"		-	Put some files in them with 'e'
+"		-	Push some around with '[HLJK]'
+"		-	Smack them all down with 'q'
+"
+"		By now you should have a feel for the difference it makes to have
+"		single keys to deal with the window system.
+"
+"
+"	AutoResizing:
+"
+"		-	Your screen/terminal/GUI size will no longer cramp your style.
+"			Create windows that are always big enough.
+"
+"			Example:  You have several windows open, vertical and
+"			horizontal, which you set to 80 columns, but you only have
+"			120 or whatever.
+"
+"			-	Quickly visit each window, set the dimensions with 'c'.
+"				See |WW_Misc_Menu| => |WW_presets| if you want to change
+"				the values.
+"			
+"			-	For more individualized sizing,  'grow' the window to
+"				whatever size makes sense, and use the
+"				|WW_Attach_Constrain_Menu| -> lc 'lock columns' (and/or
+"				'll') command to cause the window to resize itself to the
+"				current size each time it is entered.
+"
+"			Now all those windows will resize themselves each time they are
+"			entered.
+"
+"	Templates:
+"
+"	-	Store a tab to a session with the windows arranged how you
+"		want.
+"
+"	-	Create a macro key to retrieve the template like:
+"
+"		<F2>	srsessname^M
+"
+"				s				save menu
+"				 r				restore
+"				  sessname		name of the session (without Session. or .vim )
+"				          ^M	literal carriage return, with ^V^M or ^Q^M
+"					
+"
+"	Keeping Track Of Buffers:
+"
+"		If you're using TabLineSet.vim with the verbose option, you'll be
+"		able to see all open buffers in the tabline (especially if you have
+"		the 'Tabline wrapping patch' installed).
+"
+"		The find, '/', command will show you all loaded buffers, or '?' for
+"		all buffers.
+"
+"   See Also:  |WW_Other|
+"
+"
+"	To do :  Better tab-to-tab navigation. (^I, ^O, wrapping, /find )
+"	To do :  Creating Layouts with attachments and locked sizes.
+"
+"
+"
+" }}}
 "
 "	Initial Set Up:                                 *WW_Initial_Set_Up* {{{~
 "
@@ -204,6 +295,9 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "					creating or destroying windows , 
 "				3)	moving a window (and its buffer and cursor) to a new
 "					location, causing the layout to rearrange.
+"				
+"				*	See |WW_grow| for the alternation actions for these
+	"				keys when 'grow' mode is on.
 "
 "				The above key commands are set up along those lines:
 "
@@ -260,14 +354,47 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "		{s}ave/restore menu
 "
 "				Submenu for saving sessions.  See |WW_Save_Menu|
+"				( ^S and ^R macros are set by default to
+"				quicksave/restore.  See |WW_Macro_keys| .)
 "
-"		{g}row
 "
-"				Toggles "grow" mode where the shift- and control- of [jkhl]
-"				keys is changed to do window resizing.  This is also in the
+"		{g}row        *WW_grow*  *WW_resize*
+"
+"				Toggles 'grow' mode where the shift- and control- of [jkhl]
+"				keys are changed to do window resizing.  This toggle in the
 "				|WW_Misc_Menu|, but is also at the top level for convenience.
-"				This option is reset each time WinWalkerMenu() is called via
-"				^W or whatever.
+"
+"			[JKHL]
+"				Grow the window one line/col in the given direction.  I.e
+"				(remember, 'l' is Vim for 'right', and 'h' is Vim for
+"				'left' ) for win1 'L' will increase the width by 1, and 'H'
+"				will decrease by 1, and the opposite will happen for win2:
+">
+"				---------------
+"				|     L|->    |
+"				|win1  |      |
+"				|    <-|H     |
+"				---------------
+"				---------------
+"				|     L|->    |
+"				|      |  win2|
+"				|    <-|H     |
+"				---------------
+"<
+"				The [JKHL] and arrow keys attempt to 'grow' the window in
+"				that direction, not just shrink or expand like wincmd + - <
+"				>  .  Hopefully others will find this more intuitive, as I
+"				do.  The exception is for windows between other windows,
+"				where the directional keys become ambiguous, in which case a
+"				default action is done.
+"
+"			^J^K^H^L
+"				Grow the window more quickly (I picked a couple values
+"				which seemed about right...not real scientific).
+"				
+"
+"				This option is reset each time WinWalkerMenu() is called
+"				from Vim Normal mode via ^W or whatever.
 "				
 "		{n}ew win
 "		{v}ert new
@@ -293,7 +420,7 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "				Buffer name or number can be selected. {?} includes hidden
 "				buffer names.
 "
-"		{c}olumn preset ( lines, cols, actually)
+"		{c}olumn preset ( lines, cols, actually)	|WW_presets|
 "
 "				A quick set option to resize the current window to user's
 "				preferred working dimensions, I.e. 80 columns, and 15 lines.
@@ -321,7 +448,7 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "
 "	Attach/Constrain Menu:                        *WW_Attach_Constrain_Menu*   {{{~
 "
-"		lines/{c}olumns preset
+"		lines/{c}olumns preset		*WW_presets*
 "
 "				The preset is used create a standard workable size for a
 "				window.  It is most useful when creating and moving around
@@ -350,14 +477,14 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "				different WinWalker 'locked' column values won't result in
 "				windows with different widths).
 "
-"				Sometimes you can get the message:
+"				The placement routine is fairly simplistic, and will have
+"				trouble with many windows and constraints, particularly
+"				because Vim's native placement can fight back.
 "
-"					' Warning: possible window constraint conflicts.'
-"
-"				when there are no direct conflicts, but there are a lot of
-"				windows open, and doing the auto-resize for locked line/col
-"				values will fight with the Vim default window size
-"				minimums.
+"				There can be cases when there are no direct conflicts, but
+"				there are a lot of windows open, and doing the auto-resize
+"				for locked line/col values will fight with the Vim default
+"				window size minimums.
 "
 "				There are some cases where the auto-resizing won't work
 "				immediately, i.e. a window is trying to resize itself to a
@@ -400,7 +527,7 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "				Win :	wrap at top/bottom/left/right sides of screen
 "				tabs :	wrap into adjacent tabs at R/L sides of screen
 "
-"		{m}enu
+"		{me}nu
 "
 "			Set whether full prompt is shown for the main menu.
 "
@@ -445,7 +572,7 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "			after execution.  This is most useful for when |WW_timeoutlen|
 "			is set to 0.  See |WW_Customizing|
 "
-"		{M}acro keys
+"		{ma}cro keys      *WW_Macro_keys*
 "			
 "			Use this to create single key mappings to key sequence macros
 "			that are given to:
@@ -461,9 +588,13 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "						Bring up your favorite file in a new window:
 "							vertical new, edit 'myfile', resize to preset
 "
-"				2		/W
-"						Jump to your favorite window from anywhere, in this
-"						case 'W' matches 'WinWalker'.
+"				2		/WinWalker^M^C
+"						Jump to your favorite window from anywhere.  In this
+"						example 'W' matches 'WinWalker' since it's the only
+"						buffer starting with 'w' in my current buffer list,
+"						and 'inWalker' is discarded (^M,^C,<ESC>,' '
+"						delimit the discard end).  ^C quits (or ' ', etc.)
+"						and leaves the 'WinWalker' window/buffer open.
 "
 "				<F2>	Nsrmysession^M 
 "						Bring up your favorite screen/tab layout:
@@ -567,11 +698,19 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "			in the menu, regardless of how fast you type them.
 "
 "			With  ^W  set in the dropout keys list,  ^W^W  from Vim Normal
-"			mode will behave the same regardless of timeoutlen.
+"			mode will behave the same regardless of timeoutlen.  If you set
+"			it up this way, the following are handy for moving around
+"			outside the menu mode:
+">
+"				nnoremap <silent> <tab> :call Tab_jump_or_win_move()<CR>
+"				nmap <silent> <S-Tab> <C-W><C-P>
+"				nnoremap <silent> <c-tab> :tabnext<CR>
+"				nnoremap <silent> <s-c-tab> :tabprev<CR>
+"<
 "
-"		-	Single keys can be remapped via  g:WinWalker_remap  dict var.
-"			You can put it into your .vimrc, but it probably easier to use
-"			it through the {m}isc menu.
+"		-	Single keys can be remapped inside WinWalker via
+"			g:WinWalker_remap  dict var.  You can put it into your .vimrc,
+"			but it probably easier to use it through the |WW_Misc_Menum|
 "	
 " }}}
 "
@@ -604,6 +743,7 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "			map ,t <c-w>Nnvnvnv
 "
 "			map ,tt <C-W>N:Tlist<CR>hn:Explore<CR><CR>:copen<CR>H:help WinWalker<CR>Lnesomefile<CR>=c<SPACE>asome stuff<ESC>
+"
 "				<C-W>				calls WinWalkerMenu function
 "				N					opens a new tab
 "				:Tlist<CR>			opens Taglist using the  :  pass-through
@@ -672,15 +812,14 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "		but side any effects aren't known yet as of v1.3.
 "
 "
-"	Bugs:  *WW_Bugs*  ~
+"	Bugs Etc:  *WW_Bugs*  ~
 "
 "	-	The cmdheight isn't always restored correctly at this time.  As of
 "		Vim70c, a bug exists for setting/resetting the value in different
 "		tabs.  It seems to be better with 70d, but not all cmdheight issues
 "		are resolved.
 "
-"	-	The error message as received by the {:}  and {e} commands sometimes
-"		return something which seems unrelated.
+"	-	New windows are inheriting set_fixed_lines/cols.
 "
 "	-	As of Vim70d, there is a problem with using <expr>, so this form:
 "
@@ -717,6 +856,9 @@ let g:WinWalker_debug = 'jumplist'	"jumplist, events
 "		however, this doesn't work either, sooo
 "
 "			map ,t <c-w>tn<ESC>nvnvnv
+"
+"	-	Fix Tab_menu for unhuman input
+"
 " }}}
 "}}}
 
@@ -733,7 +875,7 @@ if v:version < 700
 	finish
 endif
 
-let s:version = '2.0' 		" must be a string for searches to work
+let s:version = '2.1' 		" must be a string for searches to work
 
 
 nnoremap <silent> <leader>w :call WinWalkerMenu()<CR>
@@ -763,7 +905,13 @@ let g:WinWalker_opts.preset_cols	= 80
 
 
 let g:WinWalker_remap = {}
-let g:WinWalker_macros = {}
+if !exists( 'g:WinWalker_macros' )
+	let g:WinWalker_macros = {
+			\ "\<C-S>" : "stquicksave\<CR> ",
+			\ "\<C-R>" : "srquicksave\<CR> ",
+			\ }
+endif
+
 
 let g:WinWalker_dropout_keys = [ "\<C-W>", "\<C-P>" ]
 "let g:WinWalker_dropout_keys = [ "\<C-W>", "\<C-P>"
@@ -839,6 +987,7 @@ let s:Win_orient = {}
 let s:empty_label = "{  W i n W a l k e r -- E M P T Y  }"
 
 let s:last_start_time = 0
+let s:prev_winnrs = [ winnr() ]
 let s:Fast_pass = 0
 let s:errmsg = ''
 let s:infomsg = ''
@@ -850,6 +999,8 @@ function! WinWalkerMenu( ... )
 	"exe "normal! :   <CR>"
 
 	call s:Hi_init()
+
+	let v:errmsg = ''
 
 	" Reset grow mode upon entry so macros will work, i.e.  <c-w>gK
 	let s:grow_mode = 0
@@ -871,10 +1022,22 @@ function! WinWalkerMenu( ... )
 	set eventignore-=WinEnter
 	set eventignore-=WinLeave
 
+	let save_lazyredraw = &lazyredraw
+	set lazyredraw
+
+
 	while 1
 
 		" As an alternative to creating lots of 'old_bufnr' type vars 
 		let s:this_bufnr = bufnr("%")
+
+		if s:prev_winnrs[ -1 ] != winnr()
+			call add( s:prev_winnrs, winnr() )
+		endif
+		while len( s:prev_winnrs ) > 5
+			call remove( s:prev_winnrs, 0 )
+		endwhile
+		"echomsg 's:prev_winnrs ' . string( s:prev_winnrs )
 
 		if !exists( 'Menu_started' )
 			if s:Unhuman_input
@@ -940,7 +1103,7 @@ function! WinWalkerMenu( ... )
 							\ . "%#Tag#" . g:WinWalker_opts.preset_cols . "%##"
 							\ . ")" )
 
-				call Char_menu_wrapAdd( l, "Win {a}ttach/constrain menu" )
+				call Char_menu_wrapAdd( l, "{a}ttach/constrain menu" )
 				call Char_menu_wrapAdd( l, "{t}ab menu" )
 				call Char_menu_wrapAdd( l, "{s}=>save/restore menu" )
 				call Char_menu_wrapAdd( l, "[ {m}isc menu--> ", ", " )
@@ -961,6 +1124,7 @@ function! WinWalkerMenu( ... )
 				call Char_menu_wrapAdd( l, s:Buffer_status_string() )
 
 				call Char_menu_wrapAdd( l, "send :{q}uit/:{Q}uit!/{<C-Q>}=tabclose!/{Z}Z" )
+
 			endif " if g:WinWalker_opts.menu ==? 'FULL'
 
 
@@ -994,7 +1158,7 @@ function! WinWalkerMenu( ... )
 			endif
 
 
-			
+
 			"if s:Fast_pass && getchar(1)
 			if getchar(1)
 				let l:inp = getchar()
@@ -1004,6 +1168,8 @@ function! WinWalkerMenu( ... )
 			else
 				match WinWalker_sel /./
 				call s:Empty_fill_fake()
+				call s:Cause_window_update()
+				redraw
 
 				let l:inp = Char_menu( join( l, '' )
 							\ , "{<ESC>} {<C-C>} {<DEL>} {<BS>} {;}"
@@ -1052,29 +1218,29 @@ function! WinWalkerMenu( ... )
 			return
 
 
-		" ----------------------------------------
-		" Quick :ex command passthrough {{{
-		"
+			" ----------------------------------------
+			" Quick :ex command passthrough {{{
+			"
 		elseif l:inp =~ '[e;:]'
 
-"			call feedkeys( ':', 't' )
-"
-"			while 1
-"				let inp = getchar()
-"				if inp == "\<ESC>" | break | endif
-"				call feedkeys( inp, 't' )
-"			endwhile
-"
-"			continue
-"
-"			cnoremap <silent> <buffer> <expr> <c-f> s:Hist_to_inp() . "\<c-f>"
-"			function! s:Hist_to_inp()
-"				for i in range( -5, -1 )
-"					let s = histget( 'cmd', i )
-"					call histadd( 'input', s )
-"				endfor
-"				return ''
-"			endfunction
+			"			call feedkeys( ':', 't' )
+			"
+			"			while 1
+			"				let inp = getchar()
+			"				if inp == "\<ESC>" | break | endif
+			"				call feedkeys( inp, 't' )
+			"			endwhile
+			"
+			"			continue
+			"
+			"			cnoremap <silent> <buffer> <expr> <c-f> s:Hist_to_inp() . "\<c-f>"
+			"			function! s:Hist_to_inp()
+			"				for i in range( -5, -1 )
+			"					let s = histget( 'cmd', i )
+			"					call histadd( 'input', s )
+			"				endfor
+			"				return ''
+			"			endfunction
 
 			let fake_prompt = '->:'
 			let pre_enter = ''
@@ -1088,13 +1254,13 @@ function! WinWalkerMenu( ... )
 				let compete_opt = 'command'
 			endif
 
-				" compete_opt only works for the line as a whole, not
-				" individual words.   Crap.
-				"
-				" Adding a default text will cripple the compete_opt, because
-				" the default text is considered to be part of any compete_opt
-				" the user attemps.
-				"
+			" compete_opt only works for the line as a whole, not
+			" individual words.   Crap.
+			"
+			" Adding a default text will cripple the compete_opt, because
+			" the default text is considered to be part of any compete_opt
+			" the user attemps.
+			"
 			try
 				let g:redir_tmp = ''
 				let ex_input = input( fake_prompt . pre_enter, "", compete_opt )
@@ -1117,6 +1283,9 @@ function! WinWalkerMenu( ... )
 								\ '<\d\d>', ' ', 'g' ) . ']'
 				endif
 				"cunmap <buffer> <c-f>
+				if l:inp == 'e'
+					call WinWalker_WinEnter()
+				endif
 			endtry
 
 			" Completion behavior				*:command" -completion*
@@ -1145,9 +1314,9 @@ function! WinWalkerMenu( ... )
 
 
 
-		" ----------------------------------------
-		"  Other menus,  Misc, Tab, Save {{{
-		"
+			" ----------------------------------------
+			"  Other menus,  Misc, Tab, Save {{{
+			"
 		elseif l:inp ==# 'a'
 			call s:Constraints_menu()
 
@@ -1162,13 +1331,13 @@ function! WinWalkerMenu( ... )
 		elseif l:inp ==# 's'
 			call s:Save_menu()
 
-		"  End Other menus,  Misc, Tab, Save }}}
-		" ----------------------------------------
+			"  End Other menus,  Misc, Tab, Save }}}
+			" ----------------------------------------
 
 
-		" ----------------------------------------
-		" Find/jump to a window {{{
-		"
+			" ----------------------------------------
+			" Find/jump to a window {{{
+			"
 		elseif l:inp =~# '[/]'
 
 			let matched = {}
@@ -1254,9 +1423,9 @@ function! WinWalkerMenu( ... )
 
 
 
-		" ----------------------------------------
-		"  Only and tabnew clone {{{
-		"
+			" ----------------------------------------
+			"  Only and tabnew clone {{{
+			"
 		elseif l:inp ==# 'o'
 			"
 			" ----------------------------------------
@@ -1287,9 +1456,9 @@ function! WinWalkerMenu( ... )
 
 
 
-		" ----------------------------------------
-		" Jump commands:  ^I ^O   {{{
-		"
+			" ----------------------------------------
+			" Jump commands:  ^I ^O   {{{
+			"
 		elseif l:inp ==# "\<C-I>"
 			call s:Jump_list_forward()
 
@@ -1297,8 +1466,8 @@ function! WinWalkerMenu( ... )
 		elseif l:inp ==# "\<C-O>"
 			if exists( 's:O_temp_win' )
 				if			s:O_temp_win.tabnr == tabpagenr()
-					\ &&	s:O_temp_win.winnr == winnr()
-					\ && !&modified
+							\ &&	s:O_temp_win.winnr == winnr()
+							\ && !&modified
 					hide
 				endif
 				" 'hide' will trigger 'BufLeave' which will unlet it:
@@ -1310,9 +1479,9 @@ function! WinWalkerMenu( ... )
 			" ---------------------------------------- }}}
 
 
-		" ----------------------------------------
-		" Grow or shrink {{{
-		"
+			" ----------------------------------------
+			" Grow or shrink {{{
+			"
 		elseif l:inp ==# 'g'
 			"
 			" ----------------------------------------
@@ -1326,10 +1495,10 @@ function! WinWalkerMenu( ... )
 		elseif s:grow_mode && ( l:inp =~# '[JKHL]'
 					\ || l:inp =~ "\\(\<C-J>\\|\<C-K>\\|\<C-H>\\|\<C-L>\\)" )
 			let dir_keymap = { 
-					\ 'K' : 'up', 'J' : 'down', 'H' : 'left', 'L' : 'right'
-					\ , "\<C-K>" : 'up', "\<C-J>" : 'down'
-					\ , "\<C-H>" : 'left', "\<C-L>" : 'right'
-					\ }
+						\ 'K' : 'up', 'J' : 'down', 'H' : 'left', 'L' : 'right'
+						\ , "\<C-K>" : 'up', "\<C-J>" : 'down'
+						\ , "\<C-H>" : 'left', "\<C-L>" : 'right'
+						\ }
 			let dir = dir_keymap[ l:inp ]
 
 			let grow_or_shrink = GetWinAdjacent( dir ) > 0 ? '+' : '-'
@@ -1362,13 +1531,29 @@ function! WinWalkerMenu( ... )
 
 			exe do_vert . 'resize ' . grow_or_shrink . incr
 
+			if  dir =~?  '\(up\|down\)'
+				if exists('b:set_fixed_lines')
+					let b:set_fixed_lines = winheight(winnr())
+				endif
+				if exists('w:set_fixed_lines')
+					let w:set_fixed_lines = winheight(winnr())
+				endif
+			else
+				if exists('b:set_fixed_cols')
+					let b:set_fixed_cols = winwidth(winnr())
+				endif
+				if exists('w:set_fixed_cols')
+					let w:set_fixed_cols = winwidth(winnr())
+				endif
+			endif
+
 			" End:  Grow or shrink
 			" ----------------------------------------}}}
 
 
-		" ----------------------------------------
-		" WinWalker_push_window( ) {{{
-		"
+			" ----------------------------------------
+			" WinWalker_push_window( ) {{{
+			"
 		elseif l:inp =~# '[JKHL]'
 
 
@@ -1380,9 +1565,9 @@ function! WinWalkerMenu( ... )
 			" ----------------------------------------}}}
 
 
-		" ----------------------------------------
-		"  Rotate window {{{
-		"
+			" ----------------------------------------
+			"  Rotate window {{{
+			"
 		elseif l:inp ==# 'r'
 
 			if &modified
@@ -1396,7 +1581,7 @@ function! WinWalkerMenu( ... )
 
 			let tabwin = tabpagenr() . ',' . winnr()
 			if !exists( 's:Win_orient[ tabwin ]' ) 
-					\ || s:Win_orient[ tabwin ] ==? "horizontal"
+						\ || s:Win_orient[ tabwin ] ==? "horizontal"
 				" If wrong, will correct with another key press
 				quit
 				call s:New_window( 'vnew' )
@@ -1411,15 +1596,15 @@ function! WinWalkerMenu( ... )
 			wincmd =
 
 			call setbufvar( save_bufnr, '&bufhidden', save_bufhidden )
-			call s:Cause_window_update()
+			let s:Need_window_update = 1
 
 			"  End: Rotate window
 			" ---------------------------------------- }}}
 
 
-		" ----------------------------------------
-		"  Rotate view  {{{
-		"
+			" ----------------------------------------
+			"  Rotate view  {{{
+			"
 		elseif l:inp ==# 'R'
 
 			let w_restore = winnr()
@@ -1450,9 +1635,9 @@ function! WinWalkerMenu( ... )
 			" ---------------------------------------- }}}
 
 
-		" ----------------------------------------
-		"  Rotate tab {{{
-		"
+			" ----------------------------------------
+			"  Rotate tab {{{
+			"
 		elseif l:inp == "\<C-R>"
 			let pg = tabpagenr()
 			if pg == tabpagenr("$")
@@ -1465,24 +1650,24 @@ function! WinWalkerMenu( ... )
 
 
 
-		" ----------------------------------------
-		" Misc commands that don't require switched window highlighting: {{{
-		"
+			" ----------------------------------------
+			" Misc commands that don't require switched window highlighting: {{{
+			"
 		elseif l:inp =~# '[=x+<>-]'
 			exe "silent! wincmd " . l:inp
 			if l:inp == '='
-				call s:Cause_window_update()
+				let s:Need_window_update = 1
 			endif
 			"}}}
 
 
 
-		" ----------------------------------------
-		" [jkhlNtTnvwWtbp]    \\(\<C-W>\\|\<C-P>\\) {{{
-		" Misc ommands that require switched window highlighting:
-		"
+			" ----------------------------------------
+			" [jkhlNtTnvwWtbp]    \\(\<C-W>\\|\<C-P>\\) {{{
+			" Misc ommands that require switched window highlighting:
+			"
 		elseif   l:inp =~# '[jkhlNtTnvwWtbp]'
-			\ || l:inp =~# "\\(\<C-W>\\|\<C-P>\\)"
+					\ || l:inp =~# "\\(\<C-W>\\|\<C-P>\\)"
 
 
 			if l:inp ==# 't'
@@ -1541,12 +1726,21 @@ function! WinWalkerMenu( ... )
 					let s:Keep_jumps = 0
 					call WinWalker_BufEnter()
 				endif
+
 			elseif l:inp == "\<C-W>"
 				exe "silent! wincmd w"
-			elseif l:inp == "\<C-P>"
-				exe "silent! wincmd p"
+
+			elseif l:inp == "\<C-P>" || l:inp ==# 'p'
+				let len = len( s:prev_winnrs )
+				if len >= 2
+					exe 'silent ' . s:prev_winnrs[ len - 2 ] . ' wincmd w '
+				else
+					exe "silent! wincmd p"
+				endif
+
 			else
 				exe "silent! wincmd " . l:inp
+
 			endif
 
 			" end: Misc ommands that require switched window highlighting:
@@ -1554,9 +1748,9 @@ function! WinWalkerMenu( ... )
 
 
 
-		" ----------------------------------------
-		"  Exchange buffers up/down/left/right {{{
-		"
+			" ----------------------------------------
+			"  Exchange buffers up/down/left/right {{{
+			"
 		elseif l:inp =~  "\\(\<C-K>\\|\<C-J>\\|\<C-H>\\|\<C-L>\\)"
 
 			if l:inp ==  "\<C-K>"
@@ -1644,62 +1838,109 @@ function! WinWalkerMenu( ... )
 				endif
 
 			endif
-			call s:Cause_window_update()
-		"  End: Exchange buffers up/down/left/right
-		" ---------------------------------------- }}}
+			let s:Need_window_update = 1
+			"  End: Exchange buffers up/down/left/right
+			" ---------------------------------------- }}}
 
 
-		" ---------------------------------------- 
-		" Do preset      {{{
-		"
+			" ---------------------------------------- 
+			" Do preset      {{{
+			"
 		elseif l:inp ==# 'c'
-			if winheight( winnr() ) < g:WinWalker_opts.preset_lines
-				exe 'silent! resize ' . g:WinWalker_opts.preset_lines
+			let resiz = 1
+			if   exists( 'w:set_fixed_lines' )
+			\ && exists( 'w:set_fixed_cols' )
+			"\ && winheight( winnr() ) == w:set_fixed_lines
+			"\ && winwidth( winnr() ) == w:set_fixed_cols
+				unlet! w:set_fixed_lines 
+				unlet! w:set_fixed_cols 
+				let resiz = 0
 			endif
-			exe 'silent! vert resize ' . g:WinWalker_opts.preset_cols
+
+			if   exists( 'b:set_fixed_lines' )
+			\ && exists( 'b:set_fixed_cols' )
+			"\ && g:WinWalker_opts.preset_lines == b:set_fixed_lines
+			"\ && g:WinWalker_opts.preset_cols == b:set_fixed_cols
+				unlet! b:set_fixed_lines 
+				unlet! b:set_fixed_cols 
+				let resiz = 0
+			endif
+
+			if resiz
+				if	 winheight( winnr() ) < g:WinWalker_opts.preset_lines
+				\ || ( exists('w:set_fixed_lines' )
+				\      && winheight( winnr() ) < w:set_fixed_lines )
+					exe 'silent! resize ' . g:WinWalker_opts.preset_lines
+				endif
+				let b:set_fixed_lines = g:WinWalker_opts.preset_lines
+				let w:set_fixed_lines = g:WinWalker_opts.preset_lines
+
+				exe 'silent! vert resize ' . g:WinWalker_opts.preset_cols
+				let b:set_fixed_cols = g:WinWalker_opts.preset_cols
+				let w:set_fixed_cols = g:WinWalker_opts.preset_cols
+			endif
+
 
 			"}}}
 
 
-		" ----------------------------------------
-		"  Quit commands {{{
-		"
+			" ----------------------------------------
+			"  Quit commands {{{
+			"
 
 		elseif l:inp ==# 'Z'
-			let is_last = ( winnr() == winnr("$") )
-			normal! ZZ
-			if is_last && bufnr("%") != s:this_bufnr
-				call s:Jump_list_backward()
-			endif
+			try
+				let is_last = ( winnr() == winnr("$") )
+				normal! ZZ
+				if is_last && bufnr("%") != s:this_bufnr
+					call s:Jump_list_backward()
+				endif
+			catch
+				let s:errmsg .= " " . v:errmsg
+			endtry
 
 		elseif l:inp ==# 'q'
-			let is_last = ( winnr() == winnr("$") )
-			quit
-			if is_last && bufnr("%") != s:this_bufnr
-				call s:Jump_list_backward()
-			endif
+			try
+				let is_last = ( winnr() == winnr("$") )
+				if is_last && bufnr("%") != s:this_bufnr
+					quit
+					call s:Jump_list_backward()
+				else
+					quit
+				endif
+			catch
+				let s:errmsg .= " " . v:errmsg
+			endtry
 
 		elseif l:inp ==# 'Q'
-			let is_last = ( winnr() == winnr("$") )
-			quit!
-			if is_last && bufnr("%") != s:this_bufnr
-				call s:Jump_list_backward()
-			endif
+			try
+				let is_last = ( winnr() == winnr("$") )
+				quit!
+				if is_last && bufnr("%") != s:this_bufnr
+					call s:Jump_list_backward()
+				endif
+			catch
+				let s:errmsg .= " " . v:errmsg
+			endtry
 
 		elseif l:inp ==  "\<C-Q>"
-			tabclose!
-			call s:Jump_list_backward()
-		"
-		"  Quit commands 
-		" ---------------------------------------- }}}
+			try
+				tabclose!
+				call s:Jump_list_backward()
+			catch
+				let s:errmsg .= " " . v:errmsg
+			endtry
+			"
+			"  Quit commands 
+			" ---------------------------------------- }}}
 
 
 
-		" ---------------------------------------- 
-		" WinWalkerMenu end stuff {{{
-		"
-		elseif l:inp =~  "\\( \\|\<C-SPACE>\\|\<CR>\\|\<C-CR>\\)"
-			
+			" ---------------------------------------- 
+			" WinWalkerMenu end stuff {{{
+			"
+		elseif l:inp =~  "^\\( \\|\<C-SPACE>\\|\<CR>\\|\<C-CR>\\)$"
+
 			if s:Unhuman_input
 				let Menu_started = 1
 				continue
@@ -1708,31 +1949,31 @@ function! WinWalkerMenu( ... )
 			endif
 
 
-		"elseif l:inp =~  "[\eq]" || l:inp ==  "\<C-C>"
-		elseif l:inp =~ "\\(\<C-C>\\|\<ESC>\\)"
+			"elseif l:inp =~  "[\eq]" || l:inp ==  "\<C-C>"
+		elseif l:inp =~ "^\\(\<C-C>\\|\<ESC>\\)$"
 			break
 
+
+		"elseif l:inp =~# "^\\(\<leftmouse>\\)$"
+		elseif l:inp =~# "\<leftmouse>"
+			exe 'silent normal! ' . l:inp
 
 		else
 			"let s:errmsg = 'Invalid cmd (' . l:inp . ')'
+			"echomsg 'WinWalker exiting on (' . strtrans( l:inp ) . ')' 
 			exe 'silent normal! ' . l:inp
-			break
+
 		endif
 
-
-		let do_break = 0
-		for key in g:WinWalker_dropout_keys
-			if l:inp ==# key | let do_break = 1 | endif
-		endfor
-		if do_break | break | endif
-
-		redraw
+		if index( g:WinWalker_dropout_keys, l:inp ) > -1
+			break
+		endif
 
 	endwhile
 
 	if s:Unhuman_input 
 	else
-		call WinWalker_clean_empties()
+		"call WinWalker_clean_empties()
 		call Clear_cmd_window()
 		echohl Special
 
@@ -1744,7 +1985,11 @@ function! WinWalkerMenu( ... )
 		let &switchbuf = s:save_switchbuf
 	endif
 
+	call s:Cause_window_update()
 
+	let &lazyredraw = save_lazyredraw
+
+	redraw
 	" WinWalkerMenu end stuff }}}
 
 
@@ -1965,9 +2210,14 @@ function! s:Misc_menu()
 		" Change macro keys                             {{{
 		"
 		elseif '^macro' =~ l:inp 
+			for key in sort( keys( g:WinWalker_macros ) )
+				if strlen( key ) > 1
+					let key = s:special_key_name( key ) 
+				endif
+			endfor
 
 			echon "\n"
-			for key in keys( g:WinWalker_macros )
+			for key in sort( keys( g:WinWalker_macros ) )
 				echon '(' . strtrans( key ) . ')->(' 
 							\ . strtrans( g:WinWalker_macros[ key ] )
 							\ . ")\n"
@@ -1976,10 +2226,11 @@ function! s:Misc_menu()
 			echon "\n(<ESC> to cancel) Map *FROM* key:"
 			let key1 = getchar()
 			if nr2char( key1 ) != "" | let key1 = nr2char( key1 ) | endif
-			if key1 != "\<ESC>"
-				let macro = input( "\n(<ESC> to remove '" . key1
-							\ . "') Map *TO* key sequence:" )
-				echomsg 'macro ' . strtrans( macro )
+			if key1 != "\<ESC>" && key1 != ' '
+				let prompt = "\n(<ESC> to remove '" . key1 . "') Map *TO* key sequence:"
+				let default_inp = has_key( g:WinWalker_macros, key1 ) ? g:WinWalker_macros[key1] : ''
+				let macro = input( prompt, default_inp  )
+				echo 'macro ' . strtrans( macro )
 				if macro == ""
 					if has_key( g:WinWalker_macros, key1 )
 						call remove( g:WinWalker_macros, key1 )
@@ -2033,18 +2284,34 @@ endfunction
 function! s:Buffer_status_string()
 	let out = ''
 
-	let has_lines = ( exists( 'b:set_fixed_lines' ) && b:set_fixed_lines )
-	let has_cols = ( exists( 'b:set_fixed_cols' ) && b:set_fixed_cols )
+	let has_b_lines = ''
+	if ( exists( 'b:set_fixed_lines' ) && b:set_fixed_lines )
+		let has_b_lines = 'b:%#Tag#' . b:set_fixed_lines . '%##l'
+	endif
+	let has_b_cols = ''
+	if ( exists( 'b:set_fixed_cols' ) && b:set_fixed_cols )
+		let has_b_cols = 'b:%#Tag#' . b:set_fixed_cols . '%##l'
+	endif
+	let has_w_lines = ''
+	if ( exists( 'w:set_fixed_lines' ) && w:set_fixed_lines )
+		let has_w_lines = 'w:%#Tag#' . w:set_fixed_lines . '%##l'
+	endif
+	let has_w_cols = ''
+	if ( exists( 'w:set_fixed_cols' ) && w:set_fixed_cols )
+		let has_w_cols = 'w:%#Tag#' . w:set_fixed_cols . '%##l'
+	endif
+	let has_follow = ''
+	if ( exists( 'b:set_follow' ) && b:set_follow != '' )
+		let has_follow = '%#Tag#' . b:set_follow . '%##l'
+	endif
 
-	if has_lines || has_cols
-		let out .= ' , lock='
-				\ . ( has_lines || has_cols ? '(' : '' )
-				\ . ( has_lines ? 
-				\ '%#Tag#' . b:set_fixed_lines . '%##l' : '' )
-				\ . ( has_lines && has_cols ? ',' : '' )
-				\ . ( has_cols ? 
-				\ '%#Tag#' . b:set_fixed_cols . '%##c' : '' )
-				\ . ( has_lines || has_cols ? ')' : '' )
+
+	let l = [ has_b_lines , has_b_cols , has_w_lines , has_w_cols 
+				\ , has_follow ]
+	let has_any = join( filter( l, 'v:val != ""' ), ',' )
+
+	if has_any != ''
+		let out .= ' , lock=' . '(' . has_any . ')'
 	endif
 
 	if exists( 'b:attach_to' ) && len( b:attach_to ) < 1
@@ -2056,9 +2323,10 @@ function! s:Buffer_status_string()
 			if has_key( b:attach_to, dir )
 				let attachments .= ( attachments == '' ? '' : ',' )
 							\ . '%#Tag#' . dir . '->'
-							\ . ( b:attach_to[ dir ] == '' ?
-							\		'WALL' : b:attach_to[ dir ] )
+							\ . b:attach_to[ dir ] 
 							\ . '%##'
+							"\ . ( b:attach_to[ dir ] == '' ?
+							"\		'[Wall]' : b:attach_to[ dir ] )
 			endif
 		endfor
 		let out .= ' , attach=(' . attachments . ')'
@@ -2097,7 +2365,7 @@ function! s:Tab_menu()
 		call Char_menu_wrapAdd( l, "{H}/{L}=move prev/next" )
 		call Char_menu_wrapAdd( l, "{n}/{N}ew tab" )
 		call Char_menu_wrapAdd( l, "{t}ab table" )
-		call Char_menu_wrapAdd( l, "{q}/{C-Q>=tabclose/tabclose!" )
+		call Char_menu_wrapAdd( l, "{q}/{<C-Q>}=tabclose/tabclose!" )
 
 		call Char_menu_wrapAdd( l, "{SPACE}=>main menu :  "  )
 
@@ -2314,6 +2582,15 @@ function! s:Save_menu()
 						call add( bufvar_cmds[ tabnum ], cmd )
 					endif
 
+					let follow = getbufvar( bufnr, 'set_follow' )
+					if follow != ''
+						let cmd = 'call setbufvar( '
+									\ . '"' . bufname . '"' . ','
+									\ . '"set_follow"' . ','
+									\ . '"' . follow . '")'
+						call add( bufvar_cmds[ tabnum ], cmd )
+					endif
+
 					let attach_to = {}
 					if len( getbufvar( bufnr, 'attach_to' ) ) > 0
 						let attach_to = getbufvar( bufnr, 'attach_to' )
@@ -2378,19 +2655,27 @@ function! s:Save_menu()
 			let fname = input( 'Restore file? (^C, ^D, <TAB> active): ', 
 						\ g:WinWalker_opts.sess_dir . '/Session.',
 						\ 'customlist,Session_file_complete' )
+
 			if fname != ''
-				try
-					exe 'source ' . fname
-				catch
+				if filereadable( fname )
 					try
-						if fname !~ '\.vim$'
-							let fname .= '.vim'
-						endif
 						exe 'source ' . fname
 					catch
-						let s:errmsg .= ' Restore session failed, ' . v:exception
 					endtry
-				endtry
+				else
+					if fname !~ '\.vim$'
+						let fname .= '.vim'
+					endif
+					if filereadable( fname )
+						try
+							exe 'source ' . fname
+						catch
+						endtry
+					else
+						let s:errmsg .= ' Restore session failed, ' 
+									\ . fname . ' not found'
+					endif
+				endif
 			endif
 
 			if filereadable( $HOME . '/' . '.gvimrc' )
@@ -2585,13 +2870,19 @@ function! s:Constraints_menu()
 					\ . ( has_lines || has_cols ? ')' : '' )
 					\   )
 
+		let has_follow = ( exists( 'b:set_follow' ) && b:set_follow != '' )
+		call Char_menu_wrapAdd( l, "{f}ollow="
+					\ . '%#Tag#' 
+					\ . ( has_follow != '' ? b:set_follow : 'OFF' )
+					\ . '%##' 
+					\ )
+
 		let out = ''
 				for dir in [ 'up', 'down', 'left', 'right' ]
 					if exists( 'b:attach_to[dir]' )
 						let out .= ( out == '' ? '' : ',' )
 									\ . '%#Tag#' . dir . '->'
-									\ . ( b:attach_to[ dir ] == '' ?
-									\		'WALL' : b:attach_to[ dir ] )
+									\ . b:attach_to[ dir ] 
 									\ . '%##'
 					endif
 				endfor
@@ -2638,19 +2929,37 @@ function! s:Constraints_menu()
 			if l:inp ==# 'll'
 				if exists( 'b:set_fixed_lines' ) && b:set_fixed_lines
 					unlet b:set_fixed_lines
+					unlet w:set_fixed_lines
 				else
 					let b:set_fixed_lines = winheight(winnr())
+					let w:set_fixed_lines = winheight(winnr())
 				endif
 			elseif l:inp ==# 'lc'
 				if exists( 'b:set_fixed_cols' ) && b:set_fixed_cols
 					unlet b:set_fixed_cols
+					unlet w:set_fixed_cols
 				else
 					let b:set_fixed_cols = winwidth(winnr())
+					let w:set_fixed_cols = winwidth(winnr())
 				endif
 			endif
 			"}}}
 		" --------------------------------------------------
 
+
+
+		" --------------------------------------------------
+		" Set-follow                                  {{{
+		"
+		elseif l:inp =~# '[f]'
+
+				if exists( 'b:set_follow' ) && b:set_follow != ''
+					unlet b:set_follow
+				else
+					let b:set_follow = 'FOLLOW'
+				endif
+			"}}}
+		" --------------------------------------------------
 
 
 
@@ -2665,8 +2974,7 @@ function! s:Constraints_menu()
 				for dir in [ 'up', 'down', 'left', 'right' ]
 					if exists( 'b:attach_to[dir]' )
 						let out .= dir . '->'
-									\ . ( b:attach_to[ dir ] == '' ?
-									\		'WALL' : b:attach_to[ dir ] )
+									\ . b:attach_to[ dir ] 
 									\ . "\n"
 					endif
 				endfor
@@ -2696,11 +3004,11 @@ function! s:Constraints_menu()
 				endif
 
 				if winnr > 0
-					if len( b:attach_to ) > 0
-						echohl Error
-						echo "Attachments to windows must be exclusive"
-						continue
-					endif
+"					if len( b:attach_to ) > 0
+"						echohl Error
+"						echo "Attachments to windows must be exclusive"
+"						continue
+"					endif
 
 					let what = bufname( winbufnr( winnr ) ) 
 					if what == ''
@@ -2711,18 +3019,21 @@ function! s:Constraints_menu()
 						endif
 						continue
 					endif
+
 				else
-					let found_win = 0
-					for d in keys( b:attach_to )
-						if b:attach_to[ d ] > 0
-							let found_win += 1
-						endif
-					endfor
-					if found_win > 0
-						echohl Error
-						echo "Attachments to windows must be exclusive"
-						continue
-					endif
+					let what = '[Wall]'
+
+"					let found_win = 0
+"					for d in keys( b:attach_to )
+"						if b:attach_to[ d ] > 0
+"							let found_win += 1
+"						endif
+"					endfor
+"					if found_win > 0
+"						echohl Error
+"						echo "Attachments to windows must be exclusive"
+"						continue
+"					endif
 				endif
 
 				let b:attach_to[ dir ] = what
@@ -2753,6 +3064,11 @@ endfunction
 " Misc functions                                                    {{{
 
 
+function! s:special_key_name( key )
+	exe "normal :let special_key_name='" . "\<c-k>" . a:key . "'\<CR>"
+	return special_key_name
+endfunction
+
 
 function! s:Recheck_unhuman()
 	let s:Unhuman_input = Peek_char_timeout_wait( 100 )
@@ -2772,9 +3088,14 @@ endfunction
 function! s:Go_to_location( addr )
 	exe 'silent tabnext ' . a:addr.tabnr
 	exe 'silent ' . a:addr.winnr . 'wincmd w '
+
+	echomsg bufnr("%") . '!=' .  a:addr.bufnr 
+	if bufnr("%") != a:addr.bufnr | return 0 | endif
+
 	if a:addr.line && a:addr.col
 		call cursor( a:addr.line, a:addr.col )
 	endif
+	return 1
 endfunction
 
 
@@ -2788,8 +3109,14 @@ function! WinWalker_clean_empties()
 	set eventignore=all
 
 	for bufnr in range( 1, bufnr("$") )
-		if !bufexists( bufnr ) || bufloaded( bufnr ) || bufname( bufnr ) != ''
-			continue
+
+		if !bufexists( bufnr )  | continue | endif
+		if bufname( bufnr ) != '' | continue | endif
+
+		if bufloaded( bufnr )
+			if !getbufvar( bufnr, '&hidden' )
+				continue
+			endif
 		endif
 
 		exe 'sbuf ' . bufnr
@@ -2797,7 +3124,7 @@ function! WinWalker_clean_empties()
 		if line("$") > 1 || col("$") > 1
 				\ || strlen( getline( "$" ) ) > 0 
 			hide
-		else
+		elseif !getbufvar( bufnr, '&modified' )
 			exe 'silent! bwipeout! ' . bufnr
 		endif
 
@@ -2823,6 +3150,17 @@ endfunction
 
 
 
+function! Tab_jump_or_win_move()
+	let l = line(".")
+	let c = col(".")
+	let b = bufnr("%")
+	exe "normal! \<esc>\<tab>"
+	if l == line(".") && c == col(".") && b == bufnr("%")
+		call feedkeys( "\<c-w>\<c-w>", "t" )
+	endif
+endfunction
+
+
 
 " Misc functions                                                    }}}
 " ----------------------------------------------------------------------
@@ -2845,40 +3183,79 @@ function! s:New_window( orient )
 		let tabwin = tabpagenr() . ',' . winnr()
 		let s:Win_orient[ tabwin ] = 'horizontal'
 	endif
+	setlocal bufhidden=wipe
 endfunction
 
 
 
+
+let s:Need_window_update = 0
 function! s:Cause_window_update()
+
+	if ! s:Need_window_update | return | endif
+
+	let s:Keep_jumps = 1
+
 	let save_bufnr = bufnr("%")
+	let save_winnr = winnr()
 	let buflist = []
 
 	for winnr in range( 1, winnr("$") )
 		call add( buflist, winbufnr( winnr ) )
 	endfor
 
-	let s:need_window_update = 1
-	let counter = 0 
+	"let s:need_window_update = 1
+	"let safety = 0 
 
-	while s:need_window_update && counter < 10
-		let s:need_window_update = 0
+	"while s:need_window_update && safety < 10
+		"let s:need_window_update = 0
 
 		for bufnr in buflist
 			"let s:infomsg .= " w" . bufwinnr( bufnr )
 			exe 'silent ' . bufwinnr( bufnr ) . 'wincmd w'
 		endfor
 
-		"let s:infomsg .= " upd#" . counter . ',need=' . s:need_window_update
-		let counter += 1
-	endwhile
+		"let s:infomsg .= " upd#" . safety . ',need=' . s:need_window_update
+		"let safety += 1
+	"endwhile
 
-	let s:need_window_update = 0
-	if counter >= 10
-		let s:errmsg .= ' Warning: possible window constraint conflicts.'
+	"let s:need_window_update = 0
+	"if safety >= 10
+		"let s:errmsg .= ' Warning: possible window constraint conflicts.'
+	"endif
+
+
+	"
+	" Set up correct previous window for   wincmd p   or  ^P  , etc.:
+	"
+	let len = len( s:prev_winnrs )
+	if len >= 2
+		exe 'silent ' . s:prev_winnrs[ len - 2 ] . ' wincmd w '
 	endif
 
-	exe 'silent ' . bufwinnr( save_bufnr ) . ' wincmd w '
+
+
+
+	if winbufnr( save_winnr ) == save_bufnr
+		" Try to handle case where there are two windows with the same
+		" buffer:
+		exe 'silent ' . save_winnr . ' wincmd w '
+	else
+		exe 'silent ' . bufwinnr( save_bufnr ) . ' wincmd w '
+	endif
 	redraw
+	let s:Keep_jumps = 0
+endfunction
+
+
+function! s:bufwinnrs( bufnr )
+	let winnrs = []
+	for winnr in range( 1, winnr("$" ) )
+		if winbufnr( winnr ) == a:bufnr
+			call add( winnrs, winnr )
+		endif
+	endfor
+	return winnrs
 endfunction
 
 
@@ -3024,7 +3401,7 @@ function! s:Empty_fill_fake()
 		set nomodified
 	endif
 	" Need redraw here or 'match' command fails elsewhere
-	redraw
+	"redraw
 endfunction
 
 
@@ -3045,7 +3422,7 @@ function! s:Empty_empty()
 		endif
 	endif
 	" Need redraw here or 'match' command fails elsewhere
-	redraw
+	"redraw
 endfunction
 
 
@@ -3073,7 +3450,14 @@ function! WinWalker_push_window( ... )
 		return
 	endif
 
+	let b_return_to = bufnr("%")
+	if exists('goto_winnr')
+		exe 'silent ' . a:1 . ' wincmd w'
+	endif
+
 	let b_old = bufnr("%")
+	let w_old = winnr()
+
 	" Some app.s like 'Taglist' will self-destruct if they are fiddled
 	" with, so let's start with 'bufhidden', and eventignore.
 	let save_bufhidden = getbufvar( b_old, '&bufhidden' )
@@ -3081,11 +3465,6 @@ function! WinWalker_push_window( ... )
 
 	let save_eventignore = &eventignore
 	set eventignore=BufEnter,BufLeave,WinEnter,WinLeave
-
-	let b_return_to = bufnr("%")
-	if exists('goto_winnr')
-		exe 'silent ' . a:1 . ' wincmd w'
-	endif
 
 	if l:dir =~# '^[JKHL]$'
 	elseif l:dir =~# '^[jkhl]$'
@@ -3097,8 +3476,6 @@ function! WinWalker_push_window( ... )
 
 	let w_other = GetWinAdjacent( l:dir )
 	let b_other = winbufnr( w_other )
-	let b_old = bufnr("%")
-	let w_old = winnr()
 	let save_winvars_old = s:Save_window_vars( w_old )
 	let lines_old = winheight(winnr())
 	let cols_old = winwidth(winnr())
@@ -3149,7 +3526,6 @@ function! WinWalker_push_window( ... )
 				silent 99 wincmd h
 				let s:Keep_jumps = 0
 
-				call s:New_window( 'new' )
 
 			endif
 			exe 'silent buf ' . b_old
@@ -3158,7 +3534,9 @@ function! WinWalker_push_window( ... )
 			exe 'silent! wincmd ' . l:dir
 			wincmd =
 		endif
+
 	else " w_other >= 1
+
 		if l:dir =~# '[JK]'
 
 			if len( getbufvar( b_other, 'attach_to' ) ) > 0
@@ -3212,9 +3590,9 @@ function! WinWalker_push_window( ... )
 			endif
 
 			if exists('other_attach_to') && w_other > 0
-				if has_key( other_attach_to, 'up' ) && other_attach_to[ 'up' ] == 0
+				if has_key( other_attach_to, 'up' ) && other_attach_to[ 'up' ] == '[WALL]'
 					let &splitbelow = 1
-				elseif has_key( other_attach_to, 'down' ) && other_attach_to[ 'down' ] == 0
+				elseif has_key( other_attach_to, 'down' ) && other_attach_to[ 'down' ] == '[WALL]'
 					let &splitbelow = 0
 				endif
 			endif
@@ -3226,6 +3604,8 @@ function! WinWalker_push_window( ... )
 			let &splitbelow = save_splitbelow
 
 		endif
+
+		
 
 		" [v]new invalidates old window numbers
 
@@ -3239,6 +3619,11 @@ function! WinWalker_push_window( ... )
 		"redraw
 
 		exe 'silent ' . bufwinnr( b_temp ) . 'wincmd w'
+
+
+
+
+
 		exe 'silent buf ' . b_old
 
 		" Assume that if it's currently full height/width, then don't
@@ -3277,13 +3662,11 @@ function! WinWalker_push_window( ... )
 
 	let &eventignore = save_eventignore
 
-	exe 'silent ' . bufwinnr( b_return_to ) . 'wincmd w'
+	if winbufnr( winnr() ) != b_return_to
+		exe 'silent ' . bufwinnr( b_return_to ) . 'wincmd w'
+	endif
 
-	call s:Cause_window_update()
-
-	" The second call is to all resizing to try again after all the windows
-	" have moved around:
-	"call s:Cause_window_update()
+	let s:Need_window_update = 1
 
 endfunction " WinWalker_push_window( dir )
 
@@ -3361,12 +3744,18 @@ function! s:Pick_buf( )
 			let elem.bufname = bufname
 			call add( buflist, elem )
 			if s:buf_check == '' && bufloaded(b)
-				call Char_menu_wrapAdd( l, '( {' . fnamemodify( bufname, ':t' ) . '} = #{' . b . '} has win )' )
+				call add( l, '( {' . fnamemodify( bufname, ':t' ) . '} = #{' . b . '} %#Tag#has win%## )' )
 			else
-				call Char_menu_wrapAdd( l, '( {' . fnamemodify( bufname, ':t' ) . '} = #{' . b . '} )' )
+				 call add( l, '( {' . fnamemodify( bufname, ':t' ) . '} = #{' . b . '} )' )
 			endif
 			let b += 1
 		endwhile
+
+		let l1 = sort( l )
+		let l = []
+		for el in l1
+			call Char_menu_wrapAdd( l, el )
+		endfor
 
 
 		let s:errmsg = ''
@@ -3394,8 +3783,20 @@ function! s:Pick_buf( )
 		   else
 			   let s:buf_check = 'loaded'
 		   endif
+		   redraw
 		   continue
 	   endif
+
+	   " Clear unnecessary chars:
+	   while getchar(1)
+		   if nr2char( getchar(1) ) =~ "\\(\<esc>\\|\<c-c>\\|\<cr>\\| \\)" 
+			   " assumed nonhuman input
+			   call getchar()
+			   break
+		   endif
+		   call getchar()
+	   endwhile
+
 
 
 
@@ -3406,11 +3807,12 @@ function! s:Pick_buf( )
 			"if elem['bufname'] != '' && elem['bufname'] =~ '^' . inp
 			let i = escape( inp, '.' )
 			let n = fnamemodify( elem['bufname'], ':t' )
-			if n =~ '^' . i "|| n =~  '^' . i
+			if n == '' | continue | endif
+			if n =~ '^' . i
 				let matched = elem
 			elseif elem['bufnr'] ==  inp
 				let matched = elem
-			elseif elem['bufnr'] =~  '^' . inp
+			elseif elem['bufnr'] =~  '^' . i
 				let matched = elem
 			endif
 		endfor
@@ -3427,6 +3829,8 @@ function! s:Pick_buf( )
 		else
 			break
 		endif
+		call Clear_cmd_window()
+		redraw
 
 	endwhile
 
@@ -3436,7 +3840,10 @@ function! s:Pick_buf( )
 	" old position, as it usually does automatically.
 	"
 	" It needs a redraw, but doesn't help to put it here:
+	let s = &cmdheight
 	set cmdheight=2
+	redraw
+	let &cmdheight = s
 
 	return matched
 
@@ -3716,7 +4123,7 @@ function! s:Jump_list_forward()
 			"let s:Keep_jumps = 0
 		"endif
 
-		if ! s:In_list( w:Jump_list_valid, s:Jump_list_idx  )
+		if ! get( w:Jump_list_valid, s:Jump_list_idx  )
 			call s:Jump_list_forward()
 		endif
 
@@ -3739,21 +4146,29 @@ endfunction
 
 function! s:Jump_list_backward()
 	while s:Jump_list_idx > 0 && len ( s:Jump_list )
-		let s:Jump_list_idx -= 1
-		let elem = {}
-		let elem = s:Jump_list[s:Jump_list_idx]
-		call s:Go_to_location( elem )
 
 		if !exists( 'w:Jump_list_valid' )
 			let s:errmsg .= ' No valid valid list'
 			return
 		endif
 
-		if s:In_list( w:Jump_list_valid, s:Jump_list_idx  )
-			return
+		let s:Jump_list_idx -= 1
+		let elem = s:Jump_list[s:Jump_list_idx]
+
+		if get( w:Jump_list_valid, s:Jump_list_idx  ) > 0
+			if !s:Go_to_location( elem )
+				if g:WinWalker_debug =~ 'jumplist' | echomsg 'removing ' . string(elem) | endif
+				call remove( s:Jump_list, s:Jump_list_idx )
+			else
+				return
+			endif
 		else
 			"let s:infomsg .= ' Clearing jump #' . s:Jump_list_idx . ', '
-						"\ . 'valid=' . string( w:Jump_list_valid )
+			"\ . 'valid=' . string( w:Jump_list_valid )
+			if g:WinWalker_debug =~ 'jumplist' | echomsg 'removing2 ' . string(elem) . ',idx:' . s:Jump_list_idx| endif
+				"echomsg 'removing2 ' . string(elem) . ',idx:' . s:Jump_list_idx . ', valid jumps: ' . string( w:Jump_list_valid )
+							"\. ', get=' . get( w:Jump_list_valid, s:Jump_list_idx  )
+
 			call remove( s:Jump_list, s:Jump_list_idx )
 		endif
 	endwhile
@@ -3836,6 +4251,9 @@ aug WinWalker_aug
 	au BufLeave * call WinWalker_BufLeave()
 	au WinEnter * call WinWalker_WinEnter()
 	au WinLeave * call WinWalker_WinLeave()
+	au TabEnter * call WinWalker_TabEnter()
+	au TabLeave * call WinWalker_TabLeave()
+
 	" This interrupts getchar(), and then resets the event, and loops:
 	"au CursorHold * match
 aug end
@@ -3843,8 +4261,62 @@ aug end
 
 
 
+function! WinWalker_TabEnter()
+	if g:WinWalker_debug =~ 'events' | echomsg 'TabEnter @%=' . @% . ', afile=' . expand("<afile>") | endif
+
+	for bufnr in range( 1, bufnr("$") )
+		if getbufvar( bufnr, 'set_follow' ) ==? 'FOLLOW'
+					\ && bufwinnr( bufnr ) < 1
+			" Tricky:  has to be exactly this way:
+			exe 'silent new ' . bufname( bufnr )
+
+			" Jump back to the other window for the case when tabnew
+			" will try to open a default buffer in the current window,
+			" thus replacing the above desired buffer.
+			silent wincmd p
+		endif
+	endfor
+	let s:Need_window_update = 1
+endfunction
+
+
+
+
+
+function! WinWalker_TabLeave()
+	if g:WinWalker_debug =~ 'events' | echomsg 'TabLeave @%=' . @% . ', afile=' . expand("<afile>") | endif
+
+	"for winnr in range( 1, winnr("$") )
+	for bufnr in range( 1, bufnr("$") )
+
+		if !bufexists( bufnr )  | continue | endif
+		if getbufvar( bufnr, 'set_follow' ) != 'FOLLOW' | continue | endif
+		let winnr = bufwinnr( bufnr )
+		if winnr < 1  | continue | endif
+
+		try
+			let s = 'silent ' . winnr . ' wincmd w'
+			exe s
+			"echomsg 'buf=' . bufname( winbufnr(winnr) ) . ', ' . s
+		catch
+			echomsg 'TabLeave: ' . v:errmsg
+		finally
+			if winnr == winnr()
+				silent hide
+			endif
+		endtry
+
+	endfor
+
+endfunction
+
+
+
+
+
 function! WinWalker_BufEnter()
 	if g:WinWalker_debug =~ 'events' | echomsg 'BufEnter @%=' . @% . ', afile=' . expand("<afile>") | endif
+	call s:WinWalker_resize_fixed()
 
 	if exists( 's:O_temp_win' ) | unlet s:O_temp_win | endif
 
@@ -3959,19 +4431,41 @@ endfunction
 
 
 function! s:WinWalker_resize_fixed()
-	if exists( 'b:set_fixed_lines' ) && b:set_fixed_lines
-				\ && winheight( winnr() ) != b:set_fixed_lines
 
+	let set_lines = 0
+	if exists( 'b:set_fixed_lines' ) 
+		let w:set_fixed_lines = b:set_fixed_lines
+		let set_lines = b:set_fixed_lines
+	elseif exists( 'w:set_fixed_lines' ) 
+		let b:set_fixed_lines = w:set_fixed_lines
+		let set_lines = w:set_fixed_lines
+	endif
+
+	let set_cols = 0
+	if exists( 'b:set_fixed_cols' ) 
+		let w:set_fixed_cols = b:set_fixed_cols
+		let set_cols = b:set_fixed_cols
+	elseif exists( 'w:set_fixed_cols' ) 
+		let b:set_fixed_cols = w:set_fixed_cols
+		let set_cols = w:set_fixed_cols
+	endif
+
+	if bufname("%") == ''
+		unlet! b:set_fixed_lines
+		unlet! b:set_fixed_cols
+	endif
+
+
+	if set_lines && winheight( winnr() ) != set_lines
 		" only do if something is up or down, since otherwise, it will
 		" confuse cmdheight
 		if GetWinAdjacent( 'up' ) || GetWinAdjacent( 'down' ) 
-			exe 'silent resize ' . b:set_fixed_lines
+			exe 'silent resize ' . set_lines
 			let s:need_window_update = 1
 		endif
 	endif
-	if exists( 'b:set_fixed_cols' ) && b:set_fixed_cols
-				\ && winwidth( winnr() ) != b:set_fixed_cols
-		exe 'silent vertical resize ' . b:set_fixed_cols
+	if set_cols && winwidth( winnr() ) != set_cols
+		exe 'silent vertical resize ' . set_cols
 		let s:need_window_update = 1
 	endif
 endfunction
@@ -3997,81 +4491,33 @@ let s:need_window_update = 0
 function! s:WinWalker_do_attachments()
 	if !exists( 'b:attach_to' ) | return | endif
 
-	let save_lazyredraw = &lazyredraw
-	"set lazyredraw
+	let s:Keep_jumps = 1
 
-	let need_retry = 0
+	let bufnr_starting = bufnr("%")
+
+	"let s:infomsg .=  ', ' . bufname( bufnr_starting ) . '=' . string( b:attach_to )
+
 	let counter = 0
 	while counter < 10
 		let counter += 1
+		let need_retry = 0
 
+
+		" ----------------------------------------------------------------------
+		"
+		"  Attachments to other windows
+		"
 		for dir in keys ( b:attach_to )
-			"let s = 'attach ' . dir . ' to ' . b:attach_to[ dir ]
-			"let s:infomsg .= s
-			"echomsg s
+			if b:attach_to[ dir ] == '[Wall]' | continue | endif
 
 			let other_winnr = GetWinAdjacent( dir )
 
-			" ----------------------------------------------------------------------
-			if b:attach_to[ dir ] =~ '^\d\+$'
-			"
-			"  Attachments to walls
-			"
+			if bufname( winbufnr( other_winnr ) ) != b:attach_to[ dir ]
 
-				while other_winnr > 0
-					" 
-					" Special handling is required when trying to push in a
-					" direction, where there is an adjacent
-					" window in that direction, attached to the current window.
-					" 
-					if		has_key( b:attach_to, 'up' )
-						\&& has_key( b:attach_to, 'down' )
-						\&&	b:attach_to[ 'up' ] == 0
-						\&&	b:attach_to[ 'down' ] == 0
-
-						if other_winnr > ( other_winnr("$") / 2 )
-							call WinWalker_push_window( other_winnr, 'left' )  
-						else
-							call WinWalker_push_window( other_winnr, 'right' )  
-						endif
-						let need_retry = 1
-						let s:need_window_update = 1
-
-					elseif	has_key( b:attach_to, 'right' )
-						\&& has_key( b:attach_to, 'left' )
-						\&&	b:attach_to[ 'right' ] == 0
-						\&&	b:attach_to[ 'left' ] == 0
-
-						if other_winnr > ( other_winnr("$") / 2 )
-							call WinWalker_push_window( other_winnr, 'down' )  
-						else
-							call WinWalker_push_window( other_winnr, 'up' )  
-						endif
-						let need_retry = 1
-						let s:need_window_update = 1
-
-					else
-						"let s = 'push win('. bufname(winbufnr(other_winnr)) . '}( ' . dir . ') toward ' . other_winnr
-						"let s:infomsg .= s
-						"echomsg s
-						call WinWalker_push_window( dir )  
-						let need_retry = 1
-						let s:need_window_update = 1
-					endif
-
-					let other_winnr = GetWinAdjacent( dir )
-				endwhile
-
-			" ----------------------------------------------------------------------
-			elseif bufname( winbufnr( other_winnr ) ) != b:attach_to[ dir ]
-			"
-			"  Attachments to other windows
-			"
-
-				let buf_starting = bufnr("%")
-				let winnr_attach_to =  bufwinnr( bufnr( b:attach_to[ dir ] ) )
+				let bufnr_attach_to =  bufnr( b:attach_to[ dir ] )
+				let winnr_attach_to =  bufwinnr( bufnr_attach_to )
 				if winnr_attach_to < 1
-					call remove( b:attach_to, dir )
+					"call remove( b:attach_to, dir )
 					break
 				endif
 				exe 'silent ' . winnr_attach_to . ' wincmd w'
@@ -4099,7 +4545,7 @@ function! s:WinWalker_do_attachments()
 				let &splitbelow = save_splitbelow
 				let &splitright = save_splitright
 
-				call s:Exchange_win( winnr(), bufwinnr( buf_starting ) ) 
+				call s:Exchange_win( winnr(), bufwinnr( bufnr_starting ) ) 
 
 				let winnr_other = bufwinnr( bufnr("_kill_this_" ))
 				if winnr_other > 0
@@ -4109,14 +4555,119 @@ function! s:WinWalker_do_attachments()
 					let s:errmsg .= ' Clean up failed after do_attachment'
 				endif
 
+				exe 'silent ' . bufwinnr( bufnr_starting ) . ' wincmd w'
+
 				let &eventignore = save_eventignore
 				let &bufhidden = save_bufhidden
 
-			endif
+
+			else  " other buffer is already attach_to buffer
+
+				"
+				" Copy buffer constraint var vals from the window
+				" attached to:
+				"
+
+				let bufnr_attach_to =  bufnr( b:attach_to[ dir ] )
+
+				let follow = getbufvar( bufnr_attach_to, 'set_follow' )
+				if follow != ''
+					call setbufvar( bufnr_starting, 'set_follow', follow )
+				endif
+
+				let cols = getbufvar( bufnr_attach_to, 'set_fixed_cols' )
+				let lines = getbufvar( bufnr_attach_to, 'set_fixed_lines' )
+				if dir == 'up' || dir == 'down'
+					if cols != ''
+						call setbufvar( bufnr_starting, 'set_fixed_cols', str2nr( cols ) )
+					endif
+				endif
+				if dir == 'left' || dir == 'right'
+					if lines != ''
+						call setbufvar( bufnr_starting, 'set_fixed_lines', str2nr( lines ) )
+					endif
+				endif
+
+			endif " check if other buffer is already attach_to buffer
+
 		endfor
+		"  End:  Attachments to other windows
+		" ----------------------------------------------------------------------
+
+
+
+		" ----------------------------------------------------------------------
+		"
+		"  Attachments to walls
+		"
+		for dir in keys ( b:attach_to )
+			if b:attach_to[ dir ] != '[Wall]' | continue | endif
+
+			"let s:infomsg .= ', dir ' . dir
+
+			let other_winnr = GetWinAdjacent( dir )
+
+			while other_winnr > 0    " End push until hit wall
+
+				if		( dir == 'up' || dir == 'down' )
+							\&&	b:attach_to[ dir ] == '[WALL]'
+
+					if has_key( b:attach_to, 'left' )
+								\&&	b:attach_to[ 'left' ] == '[WALL]'
+						"let s:infomsg .= ', push right'
+						call WinWalker_push_window( other_winnr, 'right' )  
+					else
+						"let s:infomsg .= ', push left'
+						call WinWalker_push_window( other_winnr, 'left' )  
+					endif
+
+					let need_retry = 1
+					let s:need_window_update = 1
+
+				elseif		( dir == 'left' || dir == 'right' )
+							\&&	b:attach_to[ dir ] == '[WALL]'
+
+					if has_key( b:attach_to, 'up' )
+								\&&	b:attach_to[ 'up' ] == '[WALL]'
+						"let s:infomsg .= ', push down'
+						call WinWalker_push_window( other_winnr, 'down' )  
+					else
+						"let s:infomsg .= ', push up'
+						call WinWalker_push_window( other_winnr, 'up' )  
+					endif
+
+					let need_retry = 1
+					let s:need_window_update = 1
+				else
+
+					let s = 'push win('. bufname(winbufnr(other_winnr)) . '}( ' . dir . ') toward ' . other_winnr
+					"let s:infomsg .= s
+					"echomsg s
+					call WinWalker_push_window( dir )  
+					let need_retry = 1
+					let s:need_window_update = 1
+				endif
+
+				"redraw
+				"call input( s:infomsg . "enter: " )
+
+				let other_winnr = GetWinAdjacent( dir )
+
+			endwhile " End push until hit wall
+
+		endfor
+		"
+		"  End Attachments to walls
+		"
+		" ----------------------------------------------------------------------
+
+
+
 		if !need_retry  | break | endif
+
 	endwhile
-	let &lazyredraw = save_lazyredraw
+
+	let s:Keep_jumps = 0
 
 endfunction
 
@@ -4131,12 +4682,10 @@ endfunction
 
 
 
-
 " Autocommand functions                                             }}}
 " ----------------------------------------------------------------------
 
 
 
-" XXXvim7:ts=4:sw=4:foldenable:foldmarker={{{,}}}:foldmethod=marker:foldopen=all
-" vim7:tw=75:ts=4:sw=4:foldenable:foldmarker={{{,}}}:foldmethod=marker:foldopen=hor,tag,jump,mark,search
+" vim7:tw=75:ts=4:sw=4:foldenable:foldmarker={{{,}}}:foldmethod=marker:foldopen=hor,tag,jump,mark,search:noexpandtab
 

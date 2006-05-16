@@ -9,6 +9,9 @@
 " Updated:		Tue Apr 18, 04/18/2006 6:25:14 AM
 " Requirements:	Vim 6
 " Version:		Not individually released yet.
+" Changes:	-	Sun Apr 30, 04/30/2006 5:55:48 AM
+" 				Fixed case handling to follow 'ignorecase'
+" 				
 "
 
 "	Features:
@@ -217,20 +220,20 @@ function! Char_menu_display( menu_str, received_chars )
 
 		if l:match_end <= 0 | break | endif
 
-		let l:tok = matchstr( l:menu_str, parse )
+		let tok = matchstr( l:menu_str, parse )
 
 		let l:menu_str = strpart( l:menu_str, l:match_end )
 
-		if l:tok == '{'
+		if tok == '{'
 			let l:hl = g:CMu_menu_hl_standout
-			let l:tok = ''
+			let tok = ''
 			let l:in_standout = 1
-		elseif l:tok == '}'
+		elseif tok == '}'
 			let l:hl = g:CMu_menu_hl_text
-			let l:tok = ''
+			let tok = ''
 			let l:in_standout = 0
-		elseif l:tok =~ '^%#[^#]*#$'
-			let l:hl = substitute( l:tok, '^%#\([^#]*\)#$', '\1', '' )
+		elseif tok =~ '^%#[^#]*#$'
+			let l:hl = substitute( tok, '^%#\([^#]*\)#$', '\1', '' )
 			if l:hl == ''
 				let l:hl = 'None'
 				let l:in_custom = 0
@@ -238,12 +241,12 @@ function! Char_menu_display( menu_str, received_chars )
 				let l:in_custom = 1
 			endif
 			exe 'echohl ' . l:hl
-			let l:tok = ''
+			let tok = ''
 			continue
-		elseif l:tok =~ '\s\+'
+		elseif tok =~ '\s\+'
 			echohl None
-			echon l:tok
-			let l:tok = ''
+			echon tok
+			let tok = ''
 		else
 
 			if l:in_custom
@@ -252,27 +255,35 @@ function! Char_menu_display( menu_str, received_chars )
 			else
 				let l:hl = g:CMu_menu_hl_standout
 
-				if a:received_chars != '' && l:in_standout
+
+				let tok_case = tok
+				let received_chars_case = a:received_chars
+				if &ignorecase
+					let tok_case = tolower( tok_case )
+					let received_chars_case = tolower( received_chars_case )
+				endif
+
+				if received_chars_case != '' && l:in_standout
 					"attempt to match codes, i.e. <CR>, against actual ^M
-					if l:tok =~ '<[^>]\+>'
-						let l:tok_alt = ''
-						silent! exe 'let l:tok_alt = "\' . l:tok . '"'
-						if stridx( l:tok_alt, a:received_chars ) == 0
+					if tok =~ '<[^>]\+>'
+						let tok_alt = ''
+						silent! exe 'let tok_alt = "\' . tok . '"'
+						if stridx( tok_alt, a:received_chars ) == 0
 							let l:hl = g:CMu_menu_hl_selection
 						endif
-					elseif stridx( l:tok, a:received_chars ) == 0
+					elseif stridx( tok_case, received_chars_case ) == 0
 						let l:hl = g:CMu_menu_hl_selection
-						let l:tok = strpart( l:tok, strlen( a:received_chars) )
-						let l:menu_str = l:tok . l:menu_str
-						let l:tok = a:received_chars
+						let tok = strpart( tok, strlen( a:received_chars) )
+						let l:menu_str = tok . l:menu_str
+						let tok = a:received_chars
 					endif
 				endif
 			endif " l:in_standout
-		endif " switches for l:tok
+		endif " switches for tok
 
-		let l:tok = substitute( l:tok, '<.-\(.\)>', '^\1', 'g' )
+		let tok = substitute( tok, '<.-\(.\)>', '^\1', 'g' )
 		exe 'echohl ' . l:hl
-		echon l:tok
+		echon tok
 
 	endwhile
 
@@ -314,9 +325,20 @@ function! s:Check_menu_submatches( ... )
 	endif
 
 
-	if l:item ==# s:received_chars
+	"if l:item ==# s:received_chars
+
+	let s1 = l:item
+	let s2 = s:received_chars
+	if &ignorecase
+		let s1 = tolower( s1 )
+		let s2 = tolower( s2 )
+	endif
+
+	if s1 == s2
+		"echomsg 'match full (' . l:item . ')(' . s:received_chars . ')'
 		let s:menu_matches_full = s:menu_matches_full + 1
-	elseif stridx( l:item, s:received_chars ) == 0   " match only at start
+	elseif stridx( s1, s2 ) == 0   " match only at start
+		"echomsg 'match partial (' . l:item . ')(' . s:received_chars . ')'
 		let s:menu_matches_partial = s:menu_matches_partial + 1
 	endif
 

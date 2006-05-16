@@ -1,8 +1,9 @@
-*WinWalker.txt* v2.0 : Vim windows navigator/manager 
+*WinWalker.txt* v2.1 : Vim windows navigator/manager 
 
 	Table Of Contents: ~ {{{
 
 	|WW_Features|
+	|WW_Useful_Examples|
 	|WW_Initial_Set_Up|
 	|WW_Commands|
 		|WW_Starting|
@@ -43,11 +44,16 @@
 				of the current visible screen.
 			
 			-	Constrained size and placement.  Windows can be 'attached'
-				to walls or other windows.
+				to walls or other windows.  Windows will resize to preset
+				values as you move into them.  
 
-		-	Quick search/jump to any window in any tab by giving the first
-			unique char(s).  It jumps to a buffer's window, instead of the
-			default action of editing buffers in the current window.
+			-	Windows can follow focus into new tabs.
+
+		-	Explore buffer list, and quick search/jump to any window in any
+			tab by giving the first unique char(s).  It jumps to a buffer's
+			window, instead of the default action of editing buffers in the
+			current window.
+
 
 		-	More intuitive for many operations:
 			
@@ -76,15 +82,92 @@
 		'wincmd' for easy transition, others are shifted around to be more
 		consistent.
 
-	-	Different invocation modes:  |WW_timeoutlen| for menu, key pass-through.
-		The goal is to have the menu mode there when you want it, and keep
-		quiet otherwise.  Experiment with the different methods to find
-		what works best for you.
+	-	Different invocation modes:  |WW_timeoutlen| for menu, key
+		pass-through.  The goal is to have the menu mode there when you
+		want it, and keep quiet otherwise.  Experiment with the different
+		methods to find what works best for you.  Particularly useful for
+		^W^P   ^W^O  ^W^I  ^W/   etc.
 
 
  }}}
 
 
+  Useful Examples:                                            *WW_Useful_Examples* {{{~
+
+	... Or, 'How is this going to help me?'
+
+
+	Ergonomics:
+
+		Overall speed dealing with multiple windows.  Try it out:
+
+		-	Start the WinWalker menu, ^W
+		-	Open a new tab with  'N'
+		-	Open a few windows with  'n' and 'v'
+		-	Jump around a little with  '[hljk]'
+		-	Put some files in them with 'e'
+		-	Push some around with '[HLJK]'
+		-	Smack them all down with 'q'
+
+		By now you should have a feel for the difference it makes to have
+		single keys to deal with the window system.
+
+
+	AutoResizing:
+
+		-	Your screen/terminal/GUI size will no longer cramp your style.
+			Create windows that are always big enough.
+
+			Example:  You have several windows open, vertical and
+			horizontal, which you set to 80 columns, but you only have
+			120 or whatever.
+
+			-	Quickly visit each window, set the dimensions with 'c'.
+				See |WW_Misc_Menu| => |WW_presets| if you want to change
+				the values.
+			
+			-	For more individualized sizing,  'grow' the window to
+				whatever size makes sense, and use the
+				|WW_Attach_Constrain_Menu| -> lc 'lock columns' (and/or
+				'll') command to cause the window to resize itself to the
+				current size each time it is entered.
+
+			Now all those windows will resize themselves each time they are
+			entered.
+
+	Templates:
+
+	-	Store a tab to a session with the windows arranged how you
+		want.
+
+	-	Create a macro key to retrieve the template like:
+
+		<F2>	srsessname^M
+
+				s				save menu
+				 r				restore
+				  sessname		name of the session (without Session. or .vim )
+				          ^M	literal carriage return, with ^V^M or ^Q^M
+					
+
+	Keeping Track Of Buffers:
+
+		If you're using TabLineSet.vim with the verbose option, you'll be
+		able to see all open buffers in the tabline (especially if you have
+		the 'Tabline wrapping patch' installed).
+
+		The find, '/', command will show you all loaded buffers, or '?' for
+		all buffers.
+
+   See Also:  |WW_Other|
+
+
+	To do :  Better tab-to-tab navigation. (^I, ^O, wrapping, /find )
+	To do :  Creating Layouts with attachments and locked sizes.
+
+
+
+ }}}
 
 	Initial Set Up:                                 *WW_Initial_Set_Up* {{{~
 
@@ -166,6 +249,9 @@
 					creating or destroying windows , 
 				3)	moving a window (and its buffer and cursor) to a new
 					location, causing the layout to rearrange.
+				
+				*	See |WW_grow| for the alternation actions for these
+	"				keys when 'grow' mode is on.
 
 				The above key commands are set up along those lines:
 
@@ -222,14 +308,47 @@
 		{s}ave/restore menu
 
 				Submenu for saving sessions.  See |WW_Save_Menu|
+				( ^S and ^R macros are set by default to
+				quicksave/restore.  See |WW_Macro_keys| .)
 
-		{g}row
 
-				Toggles "grow" mode where the shift- and control- of [jkhl]
-				keys is changed to do window resizing.  This is also in the
+		{g}row        *WW_grow*  *WW_resize*
+
+				Toggles 'grow' mode where the shift- and control- of [jkhl]
+				keys are changed to do window resizing.  This toggle in the
 				|WW_Misc_Menu|, but is also at the top level for convenience.
-				This option is reset each time WinWalkerMenu() is called via
-				^W or whatever.
+
+			[JKHL]
+				Grow the window one line/col in the given direction.  I.e
+				(remember, 'l' is Vim for 'right', and 'h' is Vim for
+				'left' ) for win1 'L' will increase the width by 1, and 'H'
+				will decrease by 1, and the opposite will happen for win2:
+>
+				---------------
+				|     L|->    |
+				|win1  |      |
+				|    <-|H     |
+				---------------
+				---------------
+				|     L|->    |
+				|      |  win2|
+				|    <-|H     |
+				---------------
+<
+				The [JKHL] and arrow keys attempt to 'grow' the window in
+				that direction, not just shrink or expand like wincmd + - <
+				>  .  Hopefully others will find this more intuitive, as I
+				do.  The exception is for windows between other windows,
+				where the directional keys become ambiguous, in which case a
+				default action is done.
+
+			^J^K^H^L
+				Grow the window more quickly (I picked a couple values
+				which seemed about right...not real scientific).
+				
+
+				This option is reset each time WinWalkerMenu() is called
+				from Vim Normal mode via ^W or whatever.
 				
 		{n}ew win
 		{v}ert new
@@ -255,7 +374,7 @@
 				Buffer name or number can be selected. {?} includes hidden
 				buffer names.
 
-		{c}olumn preset ( lines, cols, actually)
+		{c}olumn preset ( lines, cols, actually)	|WW_presets|
 
 				A quick set option to resize the current window to user's
 				preferred working dimensions, I.e. 80 columns, and 15 lines.
@@ -283,7 +402,7 @@
 
 	Attach/Constrain Menu:                        *WW_Attach_Constrain_Menu*   {{{~
 
-		lines/{c}olumns preset
+		lines/{c}olumns preset		*WW_presets*
 
 				The preset is used create a standard workable size for a
 				window.  It is most useful when creating and moving around
@@ -312,14 +431,14 @@
 				different WinWalker 'locked' column values won't result in
 				windows with different widths).
 
-				Sometimes you can get the message:
+				The placement routine is fairly simplistic, and will have
+				trouble with many windows and constraints, particularly
+				because Vim's native placement can fight back.
 
-					' Warning: possible window constraint conflicts.'
-
-				when there are no direct conflicts, but there are a lot of
-				windows open, and doing the auto-resize for locked line/col
-				values will fight with the Vim default window size
-				minimums.
+				There can be cases when there are no direct conflicts, but
+				there are a lot of windows open, and doing the auto-resize
+				for locked line/col values will fight with the Vim default
+				window size minimums.
 
 				There are some cases where the auto-resizing won't work
 				immediately, i.e. a window is trying to resize itself to a
@@ -362,7 +481,7 @@
 				Win :	wrap at top/bottom/left/right sides of screen
 				tabs :	wrap into adjacent tabs at R/L sides of screen
 
-		{m}enu
+		{me}nu
 
 			Set whether full prompt is shown for the main menu.
 
@@ -407,7 +526,7 @@
 			after execution.  This is most useful for when |WW_timeoutlen|
 			is set to 0.  See |WW_Customizing|
 
-		{M}acro keys
+		{ma}cro keys      *WW_Macro_keys*
 			
 			Use this to create single key mappings to key sequence macros
 			that are given to:
@@ -423,9 +542,13 @@
 						Bring up your favorite file in a new window:
 							vertical new, edit 'myfile', resize to preset
 
-				2		/W
-						Jump to your favorite window from anywhere, in this
-						case 'W' matches 'WinWalker'.
+				2		/WinWalker^M^C
+						Jump to your favorite window from anywhere.  In this
+						example 'W' matches 'WinWalker' since it's the only
+						buffer starting with 'w' in my current buffer list,
+						and 'inWalker' is discarded (^M,^C,<ESC>,' '
+						delimit the discard end).  ^C quits (or ' ', etc.)
+						and leaves the 'WinWalker' window/buffer open.
 
 				<F2>	Nsrmysession^M 
 						Bring up your favorite screen/tab layout:
@@ -529,11 +652,19 @@
 			in the menu, regardless of how fast you type them.
 
 			With  ^W  set in the dropout keys list,  ^W^W  from Vim Normal
-			mode will behave the same regardless of timeoutlen.
+			mode will behave the same regardless of timeoutlen.  If you set
+			it up this way, the following are handy for moving around
+			outside the menu mode:
+>
+				nnoremap <silent> <tab> :call Tab_jump_or_win_move()<CR>
+				nmap <silent> <S-Tab> <C-W><C-P>
+				nnoremap <silent> <c-tab> :tabnext<CR>
+				nnoremap <silent> <s-c-tab> :tabprev<CR>
+<
 
-		-	Single keys can be remapped via  g:WinWalker_remap  dict var.
-			You can put it into your .vimrc, but it probably easier to use
-			it through the {m}isc menu.
+		-	Single keys can be remapped inside WinWalker via
+			g:WinWalker_remap  dict var.  You can put it into your .vimrc,
+			but it probably easier to use it through the |WW_Misc_Menum|
 	
  }}}
 
@@ -566,6 +697,7 @@
 			map ,t <c-w>Nnvnvnv
 
 			map ,tt <C-W>N:Tlist<CR>hn:Explore<CR><CR>:copen<CR>H:help WinWalker<CR>Lnesomefile<CR>=c<SPACE>asome stuff<ESC>
+
 				<C-W>				calls WinWalkerMenu function
 				N					opens a new tab
 				:Tlist<CR>			opens Taglist using the  :  pass-through
@@ -634,15 +766,14 @@
 		but side any effects aren't known yet as of v1.3.
 
 
-	Bugs:  *WW_Bugs*  ~
+	Bugs Etc:  *WW_Bugs*  ~
 
 	-	The cmdheight isn't always restored correctly at this time.  As of
 		Vim70c, a bug exists for setting/resetting the value in different
 		tabs.  It seems to be better with 70d, but not all cmdheight issues
 		are resolved.
 
-	-	The error message as received by the {:}  and {e} commands sometimes
-		return something which seems unrelated.
+	-	New windows are inheriting set_fixed_lines/cols.
 
 	-	As of Vim70d, there is a problem with using <expr>, so this form:
 
