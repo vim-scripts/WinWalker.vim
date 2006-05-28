@@ -1,5 +1,6 @@
 
-let g:WinWalker_debug = ''	"jumplist, events
+let g:WinWalker_debug = ''	"jumplist,events,help_extract
+
 " Header {{{
 "------------------------------------------------------------------------------
 "                     WinWalker.vim : Vim windows navigator/manager {{{
@@ -7,44 +8,51 @@ let g:WinWalker_debug = ''	"jumplist, events
 "
 "
 " Author:		Eric Arnold ( eric_p_arnold@yahoo.com )
-" 							  ^^^^^^^^^^^^^^^^^^^^^^^
-" 							  Comments, bugs, feedback welcome.
+"							  ^^^^^^^^^^^^^^^^^^^^^^^
+"							  Comments, bugs, feedback welcome.
 " Created:		Apr, 2006
-" Updated:		Tue May 16, 05/16/2006 9:15:05 AM
+" Updated:		Wed May 24, 05/24/2006 6:00:03 PM
 " Requirements:	Vim 7
 " Dependencies:	Char_menu.vim
 "
 " Version:		1.0		Wed Apr 19, 04/19/2006 4:25:30 AM
-" 						-	Initial release
-" 				1.1		Fri Apr 21, 04/21/2006 1:33:54 PM
-" 						-	Added help extraction to standard help
-" 						-	Tweaked to handle Taglist.vim
-" 				1.2		Mon Apr 24, 04/24/2006 3:47:09 AM
-" 						-	handle copen and exchange/push
-" 						-	fixed searching by bufnr bug
-" 						-	switch to Unix file format
-" 						-	added session quick-save
-" 						-	revamped help and help folding
-" 				1.2.1	Mon Apr 24, 04/24/2006 8:38:24 AM
+"						-	Initial release
+"				1.1		Fri Apr 21, 04/21/2006 1:33:54 PM
+"						-	Added help extraction to standard help
+"						-	Tweaked to handle Taglist.vim
+"				1.2		Mon Apr 24, 04/24/2006 3:47:09 AM
+"						-	handle copen and exchange/push
+"						-	fixed searching by bufnr bug
+"						-	switch to Unix file format
+"						-	added session quick-save
+"						-	revamped help and help folding
+"				1.2.1	Mon Apr 24, 04/24/2006 8:38:24 AM
 "						-	Restore accidentally deleted function
-" 				2.0		Tue Apr 25, 04/25/2006 12:52:39 AM
+"				2.0		Tue Apr 25, 04/25/2006 12:52:39 AM
 "						-	Constrained size and placement.  Windows can be
 "							'attached' to walls or other windows.
-" 						-	Added key feedkeys() macros
-" 						-	Sessions remember WinWalker constraints
-" 				2.1		Tue May 16, 05/16/2006 9:15:05 AM
-" 						-	added 'follow' option
-" 						-	'c' preset now sets the sticky auto-resize
-" 							line/column values
-" 						-	windows and buffers auto-resize separately
-" 						-	small cmdheight bug
-" 						-	smarter hondling of 'previous' window
-" 						-	various sizing fixes
+"						-	Added key feedkeys() macros
+"						-	Sessions remember WinWalker constraints
+"				2.1		Tue May 16, 05/16/2006 9:15:05 AM
+"						-	added 'follow' option
+"						-	'c' preset now sets the sticky auto-resize
+"							line/column values
+"						-	windows and buffers auto-resize separately
+"						-	small cmdheight bug
+"						-	smarter handling of 'previous' window
+"						-	various sizing fixes
+"				2.2		Wed May 24, 05/24/2006 5:59:28 PM
+"						-	Revamped window jump list ( ^I and ^O ); better
+"							tracking, cleanup, and display.
+"						-	Fixed a few problems with the find command and
+"							menu handler returning early
+"						-	Separated startup and menu timeoutlen[s].
+"						-	Updated help file.
 "
 "
 " }}}
 " Help Start:
-"*WinWalker.txt* v2.1 : Vim windows navigator/manager 
+"*WinWalker.txt* version2.2 : Vim windows navigator/manager 
 "
 "	Table Of Contents: ~ {{{
 "
@@ -54,7 +62,30 @@ let g:WinWalker_debug = ''	"jumplist, events
 "	|WW_Commands|
 "		|WW_Starting|
 "		|WW_Main_Menu|
+"			|WW_window_next_prev|
+"			|WW_movement|
+"			|WW_rotate|
+"			|WW_only_clone|
+"			|WW_Jump_list|
+"			|WW_grow|  |WW_resize|
+"			|WW_New_edit_etc|
+"			|WW_equalize|
+"			|WW_ex_passthrough|
+"			|WW_edit_passthrough|
+"			|WW_find_window|
+"			|WW_Quitting|
 "		|WW_Misc_Menu|
+"			|WW_grow_toggle|
+"			|WW_screen_wrap_type|
+"			|WW_menu_verbose_level|
+"			|WW_highlight_current_window|
+"			|WW_empty_files|
+"			|WW_timeoutlen|
+"			|WW_mtimeoutlen|
+"			|WW_Jump_list_display|
+"			|WW_key_remap|
+"			|WW_Dropout_keys|
+"			|WW_Macro_keys|
 "		|WW_Tab_Menu|
 "		|WW_Save_Menu|
 "		|WW_Attach_Constrain_Menu|
@@ -193,7 +224,7 @@ let g:WinWalker_debug = ''	"jumplist, events
 "				s				save menu
 "				 r				restore
 "				  sessname		name of the session (without Session. or .vim )
-"				          ^M	literal carriage return, with ^V^M or ^Q^M
+"						  ^M	literal carriage return, with ^V^M or ^Q^M
 "					
 "
 "	Keeping Track Of Buffers:
@@ -275,15 +306,15 @@ let g:WinWalker_debug = ''	"jumplist, events
 "}}}
 "
 "
-"	Main Menu: 	                                     *WW_Main_Menu* {{{~
+"	Main Menu:										 *WW_Main_Menu* {{{~
 "
 "
-"		{w}/{W}/{<C-W>}indow=>Nxt/Prv
+"		{w}/{W}/{<C-W>}indow=>Nxt/Prv				*WW_window_next_prev*
 "
 "				Move through the window list, same as default behavior.
 "
 "
-"		{k}/{K}/{<C-K>}=up
+"		{k}/{K}/{<C-K>}=up							*WW_movement*
 "		{j}/{J}/{<C-J>}=down
 "		{h}/{H}/{<C-H>}=left
 "		{l}/{L}/{<C-L>}=right
@@ -297,7 +328,7 @@ let g:WinWalker_debug = ''	"jumplist, events
 "					location, causing the layout to rearrange.
 "				
 "				*	See |WW_grow| for the alternation actions for these
-	"				keys when 'grow' mode is on.
+"					keys when 'grow' mode is on.
 "
 "				The above key commands are set up along those lines:
 "
@@ -311,7 +342,7 @@ let g:WinWalker_debug = ''	"jumplist, events
 "				<S-UP> is mapped to 'K'.
 "
 "
-"		{r}/{R}=rotate wins/buffers
+"		{r}/{R}=rotate wins/buffers					*WW_rotate*
 "
 "			{r}	Rotates the current window according to new/vnew.  It isn't
 "				smart about detecting the orientation of a window it
@@ -321,7 +352,7 @@ let g:WinWalker_debug = ''	"jumplist, events
 "			{R}	Rotate all the buffers around the windows in the screen
 "				without changing the window layout.
 "
-"		{o}/{O}='only'/clone
+"		{o}/{O}='only'/clone					*WW_only_clone*
 "
 "			{o}	The default 'wincmd' behavior where all windows are closed
 "				but the current.  
@@ -332,11 +363,27 @@ let g:WinWalker_debug = ''	"jumplist, events
 "				Normal ) is the first command used to leave, it will close the
 "				window, and return to the origination.
 "			
+"												*WW_Jump_list*
 "		{<C-I>}/{<C-O>}=jump forward/back
 "
-"				Traverses WinWalker's window-level jump list.  (As opposed
-"				to the Vim Normal mode ^I/^O, which traverses a buffer-level
-"				jump list.)
+"				The jump list is a history of windows visited.  It
+"				traverses WinWalker's window-level jump list.  (As opposed
+"				to the Vim Normal mode ^I/^O, which traverses a
+"				buffer-level jump list.)
+"
+"				^I moves the jump list index forward toward a higher, more
+"				recent jump number.
+"
+"				^O moves the jump list index backward toward a lower, older
+"				jump number.
+"				
+"				If you move to a different window when the jump list index
+"				isn't at the end, the new window jump point will be
+"				inserted into the list.  The list manager will prune
+"				invalid jump points when they are encountered by ^I or ^O.
+"
+"				See |WW_Misc_Menu| -> |WW_Jump_list_display| to inspect the
+"				jump list, or go directly to a specific jump number.
 "
 "		{t}ab menu
 "			
@@ -396,24 +443,25 @@ let g:WinWalker_debug = ''	"jumplist, events
 "				This option is reset each time WinWalkerMenu() is called
 "				from Vim Normal mode via ^W or whatever.
 "				
+"												*WW_New_edit_etc*
 "		{n}ew win
 "		{v}ert new
 "
 "				Same as  :new  and  :vnew  .
 "
-"		{=}equalize windows
+"		{=}equalize windows						*WW_equalize*
 "
 "				Same as Vim default.
 "
-"		{:}ex
+"		{:}ex									*WW_ex_passthrough*
 "
 "				Prompts for a command and transfers it to  :ex  to execute.
 "				Saves time exiting and re-entering the menu.
 "
-"		{e}dit	
+"		{e}dit									*WW_edit_passthrough*
 "				A shortcut to |:edit| without exiting the menu first.
 "
-"		{/}{?}find win
+"		{/}{?}find win							*WW_find_window*
 "
 "				Submenu of available/loaded buffers.  Typing the first one or
 "				so unique leading characters jumps to the matched window.
@@ -425,6 +473,7 @@ let g:WinWalker_debug = ''	"jumplist, events
 "				A quick set option to resize the current window to user's
 "				preferred working dimensions, I.e. 80 columns, and 15 lines.
 "
+"													*WW_Quitting*
 "		:{q}uit/:{Q}uit!/{<C-Q>}=tabclose!/{Z}Z
 "				
 "				Sends various quit commands.
@@ -437,11 +486,11 @@ let g:WinWalker_debug = ''	"jumplist, events
 "				the reverse effect, and bypasses the timeoutlen, and starts
 "				the menu immediately.
 "
-" 		Any other keys
+"		Any other keys
 "
-" 				... are delivered to Normal mode, and the menu exits.  So,
-" 				typing ^U, ^D, ^F, ^B  exits WinWalker, and scroll the
-" 				window.
+"				... are delivered to Normal mode, and the menu exits.  So,
+"				typing ^U, ^D, ^F, ^B  exits WinWalker, and scroll the
+"				window.
 "
 " }}}
 "
@@ -515,34 +564,34 @@ let g:WinWalker_debug = ''	"jumplist, events
 "	Misc Menu:                                        *WW_Misc_Menu* {{{~
 "
 "
-"		{g}row
+"		{g}row						*WW_grow_toggle*
 "
 "			Toggle whether the [jkhl] uppercase and control keys are used
 "			to resize windows.
 "
-"		{w}rap
+"		{w}rap						*WW_screen_wrap_type*
 "
 "			Set wrap behavior:
 "				None :	default Vim
 "				Win :	wrap at top/bottom/left/right sides of screen
 "				tabs :	wrap into adjacent tabs at R/L sides of screen
 "
-"		{me}nu
+"		{me}nu							*WW_menu_verbose_level*
 "
 "			Set whether full prompt is shown for the main menu.
 "
-"		{h}ighlight current win 
+"		{h}ighlight current win 		*WW_highlight_current_window*
 "
 "			Toggle highlighting of the current window.  The highlighting is
 "			done to help distinguish which window is current, since the
 "			cursor won't be visible.
 "
-"		{e}mpty files
+"		{e}mpty files					*WW_empty_files*
 "
 "			Same as highlighting, above, but add some text to empty files
 "			to help distinguish as current window.
 "
-"		{t}imeoutlen  *WW_timeoutlen*
+"		{t}imeoutlen  					*WW_timeoutlen*
 "
 "			Set the timeoutlen used for the wait for the key press after ^W
 "			(or whatever) in Vim Normal mode.  If the second key is
@@ -558,24 +607,39 @@ let g:WinWalker_debug = ''	"jumplist, events
 "			This also affects the timeoutlen for ambiguous matches in the
 "			{/}find command (using the Char_menu function).
 "
-"		{j}ump list
+"		{mt}imeoutlen  					*WW_mtimeoutlen*
+"
+"			Set the timeoutlen used for menu entries which match partial
+"			entries, i.e. if the find menu had {win} and {WinWalker}, and
+"			you typed 'win', it will return 'win' unless you type 'walker'
+"			before mtimeoutlen milliseconds.
+"
+"		{j}ump list						*WW_Jump_list_display*
 "
 "			Show the window-level jump list (like |:jumps| ).
-"
-"		{k}ey remap
+">
+"                Jump  Tab   Win   WinId Buf   Name
+"                5     5     1     60    27    pablo.vim
+"                4     4     3     3     3     gui.c
+"                3     4     2     14    1     normal.c
+"                2     5     1     60    27    pablo.vim
+"                1     3     1     1     35    WinWalker.vim
+"              > 0     3     2     77    116   WinWalker.txt
+"<
+"		{k}ey remap						*WW_key_remap*
 "
 "			Remap single keys.  No nesting.
 "
-"		{d}ropout keys
+"		{d}ropout keys					*WW_Dropout_keys*
 "
 "			Change keys in the list which causes the main menu to exit
 "			after execution.  This is most useful for when |WW_timeoutlen|
 "			is set to 0.  See |WW_Customizing|
 "
-"		{ma}cro keys      *WW_Macro_keys*
+"		{ma}cro keys      				*WW_Macro_keys*
 "			
 "			Use this to create single key mappings to key sequence macros
-"			that are given to:
+"			(like the Vim 'normal' command') that are given to:
 ">
 "				call feedkeys( sequence, 't' )
 "<
@@ -708,9 +772,9 @@ let g:WinWalker_debug = ''	"jumplist, events
 "				nnoremap <silent> <s-c-tab> :tabprev<CR>
 "<
 "
-"		-	Single keys can be remapped inside WinWalker via
+"		-	Single keys can be remapped inside WinWalker via the
 "			g:WinWalker_remap  dict var.  You can put it into your .vimrc,
-"			but it probably easier to use it through the |WW_Misc_Menum|
+"			but it probably easier to use it through the |WW_Misc_Menu|
 "	
 " }}}
 "
@@ -726,10 +790,10 @@ let g:WinWalker_debug = ''	"jumplist, events
 "	-	Since this uses Vim7 tabs extensively, see  TabLineSet.vim  for
 "		better visual information in the tabs themselves.
 "
-" 	-	Don't map a key that also has other operator-pending maps, i.e.
-" 		trying to map  ^W  while there were still other mappings like
-" 		custom  ^W^O  will cause it to wait (forever, possibly) for the
-" 		second key, which keeps the main menu from starting.
+"	-	Don't map a key that also has other operator-pending maps, i.e.
+"		trying to map  ^W  while there were still other mappings like
+"		custom  ^W^O  will cause it to wait (forever, possibly) for the
+"		second key, which keeps the main menu from starting.
 "
 "	-	Removing a tab, or re-arranging windows can invalidate parts of the
 "		jumplist, which will become somewhat unpredictable until it clears
@@ -875,7 +939,7 @@ if v:version < 700
 	finish
 endif
 
-let s:version = '2.1' 		" must be a string for searches to work
+let s:version = '2.2'		" must be a string for searches to work
 
 
 nnoremap <silent> <leader>w :call WinWalkerMenu()<CR>
@@ -893,12 +957,14 @@ endif
 
 let g:WinWalker_opts.sess_dir		= $HOME
 let g:WinWalker_opts.timeoutlen		= 600		" in millisec
-let g:WinWalker_opts.wrap			= 'tabs'	" or 'win', 'none'
-let g:WinWalker_opts.menu			= 'FULL'
-let g:WinWalker_opts.hi_curr		= 'ON'
-let g:WinWalker_opts.empty			= 'LABEL'	" or 'nolabel'
+let g:CMu_timeoutlen				= 1000		" menu multi-key timeout
+let g:WinWalker_opts.wrap			= 'tabs'	" tabs, win, none
+let g:WinWalker_opts.menu			= 'FULL'	" FULL, SHORT
+let g:WinWalker_opts.hi_curr		= 'ON'		" ON, OFF
+let g:WinWalker_opts.empty			= 'LABEL'	" LABEL, NOLABEL
 let g:WinWalker_opts.preset_lines	= 15
 let g:WinWalker_opts.preset_cols	= 80
+
 
 
 
@@ -920,7 +986,7 @@ let g:WinWalker_dropout_keys = [ "\<C-W>", "\<C-P>" ]
 " --------------------
 
 
-" Put a copy of this function in you .vimrc to override the highlighting:
+" Put a copy of this function in your .vimrc to override the highlighting:
 "
 function! s:Hi_init()
 	hi clear WinWalker_sel
@@ -938,11 +1004,6 @@ function! s:Hi_init()
 endfunction
 
 
-
-" You don't need to change g:CMu_timeoutlen in your .vimrc
-if exists( 'g:CMu_timeoutlen' )
-	let g:CMu_timeoutlen	= g:WinWalker_opts.timeoutlen
-endif
 
 
 
@@ -1410,7 +1471,9 @@ function! WinWalkerMenu( ... )
 				endif	" if len( found_wins ) > 1
 
 				let s:infomsg .= ' Selected (' . picked.bufname . ')'
+				let s:Keep_jumps = 1
 				exe 'tabnext ' . picked.tabnr
+				let s:Keep_jumps = 0
 				exe '' . bufwinnr( picked.bufnr ) . ' wincmd w'
 
 			else
@@ -2000,7 +2063,6 @@ endfunction
 
 
 
-
 " ----------------------------------------------------------------------
 " Misc_menu                                                         {{{
 
@@ -2037,7 +2099,8 @@ function! s:Misc_menu()
 		call Char_menu_wrapAdd( l, "{e}mpty files == " 
 					\ . '%#DiffChange#' . g:WinWalker_opts.empty . '%##' )
 
-		call Char_menu_wrapAdd( l, "{t}imeoutlen is (%#Tag#" . g:WinWalker_opts.timeoutlen . "ms%##)" )
+		call Char_menu_wrapAdd( l, "{t}imeoutlen (startup) is (%#Tag#" . g:WinWalker_opts.timeoutlen . "ms%##)" )
+		call Char_menu_wrapAdd( l, "{mt}imeoutlen (menu) is (%#Tag#" . g:CMu_timeoutlen . "ms%##)" )
 
 		call Char_menu_wrapAdd( l, "{j}ump list"  )
 		call Char_menu_wrapAdd( l, "{k}ey remap"  )
@@ -2104,14 +2167,20 @@ function! s:Misc_menu()
 				let g:WinWalker_opts.empty = 'LABEL'
 			endif
 
+
 		" --------------------------------------------------
-		" Set timeoutlen
+		" Set startup timeoutlen
 		"
 		elseif l:inp ==# 't'
-			let g:WinWalker_opts.timeoutlen = input('Enter timeout in millisec: ' )
-			if exists( 'g:CMu_timeoutlen' )
-				let g:CMu_timeoutlen	= g:WinWalker_opts.timeoutlen
-			endif
+			let g:WinWalker_opts.timeoutlen = str2nr( input('Enter startup timeout in millisec: ' ) )
+
+
+		" --------------------------------------------------
+		" Set menu timeoutlen
+		"
+		elseif l:inp ==# 'mt'
+			let g:CMu_timeoutlen = str2nr( input('Enter menu timeout in millisec: ' ) )
+
 
 		" --------------------------------------------------
 		" Set grow
@@ -2261,19 +2330,6 @@ endfunction
 
 
 
-"function! s:Status_string()
-"	let out .= ' '
-"				\ . ( s:grow_mode ? '%#DiffChange#ON%##' : 'OFF' )
-"
-"	let out .= ' wrap='
-"				\ . '%#DiffChange#' . g:WinWalker_opts.wrap . '%##'
-"
-"	let out .= ' , preset='
-"				\ . "%#Tag#" . g:WinWalker_opts.preset_lines . "%##"
-"				\ . ","
-"				\ . "%#Tag#" . g:WinWalker_opts.preset_cols . "%##"
-"				\ . ")"
-"endfunction
 
 
 function! s:Window_status_string()
@@ -2797,6 +2853,7 @@ function! WinWalker_save_cfg()
 	\ , 'let g:WinWalker_remap = ' . string( g:WinWalker_remap  )
 	\ , 'let g:WinWalker_dropout_keys = ' . string( g:WinWalker_dropout_keys )
 	\ , 'let g:WinWalker_macros = ' . string( g:WinWalker_macros  )
+	\ , 'let g:CMu_timeoutlen = ' . g:CMu_timeoutlen
 	\ ]
 
 	silent %d
@@ -2824,9 +2881,6 @@ for key in keys( save_opts )
 	endif
 endfor
 
-if exists( 'g:CMu_timeoutlen' )
-	let g:CMu_timeoutlen	= g:WinWalker_opts.timeoutlen
-endif
 
 " Save menu, functions, options                                    }}}
 " ----------------------------------------------------------------------
@@ -3084,21 +3138,6 @@ endfunction
 
 
 
-" Takes a dict type, with { tab, win, line, col }
-function! s:Go_to_location( addr )
-	exe 'silent tabnext ' . a:addr.tabnr
-	exe 'silent ' . a:addr.winnr . 'wincmd w '
-
-	echomsg bufnr("%") . '!=' .  a:addr.bufnr 
-	if bufnr("%") != a:addr.bufnr | return 0 | endif
-
-	if a:addr.line && a:addr.col
-		call cursor( a:addr.line, a:addr.col )
-	endif
-	return 1
-endfunction
-
-
 
 
 
@@ -3314,8 +3353,8 @@ endfunction
 " Usage:  GetWinAdjacent( dir ) or ( winnr, dir )
 " where 'dir'  is  h, l, j, k, up, down, left, right
 " Returns:	winnr==success,
-" 			0==found no winnr,
-" 			-1==usage error
+"			0==found no winnr,
+"			-1==usage error
 "
 function! GetWinAdjacent( ... )
 	if a:0 == 1
@@ -3723,32 +3762,41 @@ function! s:Pick_buf( )
 	let last_inp = ''
 	let buflist = []
 
+	let has_window = {}
+	for tabnr in range( 1, tabpagenr("$") )
+		for bufnr in tabpagebuflist( tabnr )
+			let has_window[ bufnr ] = 1
+		endfor
+	endfor
+
 	while 1
 		let l = []
-		let b = 1
+		let bufnr = 1
 
 		if s:errmsg != ''
 			call Char_menu_wrapAdd( l, '%#Error#' . s:errmsg . '%##  ' )
 			let s:errmsg = ''
 		endif
 
-		while b <= bufnr("$")
-			if s:buf_check == 'loaded' && !bufloaded(b)
-				let b += 1
+		while bufnr <= bufnr("$")
+			if ( s:buf_check == 'loaded' )
+			\ && ( !bufloaded( bufnr ) 
+			\	|| !has_key( has_window, bufnr ) )
+				let bufnr += 1
 				continue
 			endif
 			let elem = {}
-			let bufname = bufname( b )
+			let bufname = bufname( bufnr )
 			if bufname == '' | let bufname = '[No Name]' | endif
-			let elem.bufnr = b
+			let elem.bufnr = bufnr
 			let elem.bufname = bufname
 			call add( buflist, elem )
-			if s:buf_check == '' && bufloaded(b)
-				call add( l, '( {' . fnamemodify( bufname, ':t' ) . '} = #{' . b . '} %#Tag#has win%## )' )
+			if s:buf_check == '' && bufloaded( bufnr )
+				call add( l, '( {' . fnamemodify( bufname, ':t' ) . '} = #{' . bufnr . '} %#Tag#has win%## )' )
 			else
-				 call add( l, '( {' . fnamemodify( bufname, ':t' ) . '} = #{' . b . '} )' )
+				 call add( l, '( {' . fnamemodify( bufname, ':t' ) . '} = #{' . bufnr . '} )' )
 			endif
-			let b += 1
+			let bufnr += 1
 		endwhile
 
 		let l1 = sort( l )
@@ -3808,12 +3856,24 @@ function! s:Pick_buf( )
 			let i = escape( inp, '.' )
 			let n = fnamemodify( elem['bufname'], ':t' )
 			if n == '' | continue | endif
-			if n =~ '^' . i
+			let longest = 0
+
+			if n == inp 
 				let matched = elem
-			elseif elem['bufnr'] ==  inp
+				break
+			elseif n =~ '^' . i 
+			\ && strlen( string( i ) ) > longest
 				let matched = elem
-			elseif elem['bufnr'] =~  '^' . i
+				let longest = strlen( string( i ) )
+			elseif elem['bufnr'] ==  inp 
+			"\ && strlen( string( inp ) ) > longest
 				let matched = elem
+				break
+				"let longest = strlen( string( inp ) )
+			elseif elem['bufnr'] =~  '^' . i 
+			\ && strlen( string( i ) ) > longest
+				let matched = elem
+				let longest = strlen( string( i ) )
 			endif
 		endfor
 
@@ -3904,7 +3964,9 @@ endfunction
 " debugging problems since it overwrites any user changes to the .txt
 " file, see switch inside:
 
-"call WinWalker_help_extract()
+if g:WinWalker_debug =~ 'help_extract'
+	call WinWalker_help_extract()
+endif
 
 
 
@@ -3967,7 +4029,7 @@ function! WinWalker_help_tag_trap( key )
 	let word = matchstr( contents, '\S\+', idx )
 	if word =~ '|\W*'
 		let idx = strridx( contents, '|', idx - 1 )
-		let word = matchstr( contents, '[^| 	]\+', idx )
+		let word = matchstr( contents, '[^|		]\+', idx )
 		let word = substitute( word, '|', '', 'g' )
 		if strlen( word ) > 0
 			let tag = word
@@ -4100,81 +4162,291 @@ endfunction
 " Jump funcs                                                        {{{
 "
 
-if !exists( 's:Jump_list_idx' )
-	let s:Jump_list_idx = 0
-endif
 if !exists( 's:Jump_list' )
 	let s:Jump_list = []
+endif
+if !exists( 's:Jump_list_idx' )
+	let s:Jump_list_idx = 0
 endif
 if !exists( 's:Keep_jumps' )
 	let s:Keep_jumps = 0
 endif
 
 
-function! s:Jump_list_forward()
-	if !exists( 'w:Jump_list_valid' ) | let w:Jump_list_valid = [] | endif
-	if s:Jump_list_idx < len( s:Jump_list ) - 1
-		let s:Jump_list_idx += 1
-		"let s:Keep_jumps = 1
-		let elem = {}
-		let elem = s:Jump_list[s:Jump_list_idx]
-		call s:Go_to_location( elem )
-		"if s:Jump_list_idx == len( s:Jump_list ) - 1
-			"let s:Keep_jumps = 0
-		"endif
 
-		if ! get( w:Jump_list_valid, s:Jump_list_idx  )
-			call s:Jump_list_forward()
-		endif
 
-	else
-		let s:infomsg .= ' At end of jump list'
+
+function! s:Get_curr_location()
+	let loc =  {
+				\ "tabnr"	: tabpagenr(),
+				\ "winnr"	: winnr(),
+				\ "bufnr"	: bufnr("%"),
+				\ "winid"	: s:winid(),
+				\ "line"	: line("."),
+				\ "col"		: col("."),
+				\ }
+	return loc
+endfunction
+
+
+
+
+
+" Create a window id that will be unique across tabs:
+"
+function! s:winid()
+	if !exists( 'w:winid' )
+		let w:winid = s:winid_counter
+		let s:winid_counter += 1
+	endif
+	return w:winid
+endfunction
+
+
+
+
+function! s:Jump_list_fix()
+	if len( s:Jump_list ) < 1
+		call add( s:Jump_list, s:Get_curr_location() )
+		let s:Jump_list_idx = 0
+		return -1
+	elseif s:Jump_list_idx > ( len( s:Jump_list )  - 1 ) 
+		let s:Jump_list_idx = ( len( s:Jump_list )  - 1 )
 	endif
 endfunction
 
 
-function! s:In_list( l, what )
-	for elem in a:l
-		if elem == a:what
-			return 1
-		endif
-	endfor
+
+
+function! s:Locations_duplicates( loc1, loc2 )
+	if	len( a:loc1 ) < 6 || len( a:loc2 ) < 6
+		return 0
+	endif
+	if	a:loc1.tabnr	== a:loc2.tabnr
+	\&&	a:loc1.winnr	== a:loc2.winnr
+	\&&	a:loc1.winid	== a:loc2.winid
+		return 1
+	endif
 	return 0
 endfunction
 
 
 
-function! s:Jump_list_backward()
-	while s:Jump_list_idx > 0 && len ( s:Jump_list )
+" Return idx, or -1 on error
+"
+function! s:Jump_list_clean_and_go( idx )
+	let idx = a:idx
 
-		if !exists( 'w:Jump_list_valid' )
-			let s:errmsg .= ' No valid valid list'
-			return
+	if len( s:Jump_list ) < 1 
+		call s:Jump_list_fix()
+		return -1
+	elseif len( s:Jump_list ) == 1
+		let loc = s:Jump_list[ 0 ]
+		if s:Go_to_location( loc ) =~ '\(tabnr\|winnr\|winid\)'
+			call s:Jump_list_fix()
+			return -1
 		endif
+	endif
 
-		let s:Jump_list_idx -= 1
-		let elem = s:Jump_list[s:Jump_list_idx]
+	if idx < 0 || idx > ( len( s:Jump_list ) - 1 )
+		return -1
+	endif
 
-		if get( w:Jump_list_valid, s:Jump_list_idx  ) > 0
-			if !s:Go_to_location( elem )
-				if g:WinWalker_debug =~ 'jumplist' | echomsg 'removing ' . string(elem) | endif
-				call remove( s:Jump_list, s:Jump_list_idx )
-			else
-				return
+	let loc = s:Jump_list[ idx ]
+	let old_loc = s:Get_curr_location()
+	let ret_loc = s:Go_to_location( loc )
+	if s:Go_to_location( loc ) =~ '\(tabnr\|winnr\|winid\)'
+		call remove( s:Jump_list, idx )
+		if idx <= s:Jump_list_idx
+			let s:Jump_list_idx -= 1
+		endif
+		call s:Go_to_location( old_loc )
+		if g:WinWalker_debug =~ 'jumplist' 
+			echomsg 'Jump_list_clean: mismatched ' . ret_loc . ', removing idx# ' . idx
+		endif
+		call s:Jump_list_fix()
+		return -1
+	endif
+
+	return idx
+
+endfunction
+
+
+
+
+" Takes a dict type, with { tab, win, line, col, ... }
+"
+function! s:Go_to_location( loc )
+
+	if	len( a:loc ) < 6
+		return 'bad_loc'
+	endif
+
+
+	if a:loc.tabnr > tabpagenr("$")
+		if g:WinWalker_debug =~ 'jumplist' 
+			echomsg "Go_to_location : no such tabnr" . a:loc.tabnr
+		endif
+		return 'tabnr'
+	endif
+	exe 'silent tabnext ' . a:loc.tabnr
+
+	if a:loc.winnr > winnr("$")
+		if g:WinWalker_debug =~ 'jumplist' 
+			echomsg "Go_to_location : no such winnr" . a:loc.winnr
+		endif
+		return 'winnr'
+	endif
+	exe 'silent ' . a:loc.winnr . 'wincmd w '
+
+	if bufnr("%") != a:loc.bufnr 
+		if g:WinWalker_debug =~ 'jumplist' 
+			echomsg "Go_to_location : " . bufnr("%") . '!= ??' .  a:loc.bufnr 
+		endif
+		return 'bufnr'
+	endif
+
+	if s:winid() != a:loc.winid
+		if g:WinWalker_debug =~ 'jumplist' 
+			echomsg "Go_to_location : " . s:winid() . ' != ' .  a:loc.winid 
+		endif
+		return 'winid'
+	endif
+
+	if a:loc.line && a:loc.col
+		call cursor( a:loc.line, a:loc.col )
+	endif
+
+	return 'success'
+
+endfunction
+
+
+
+
+function! s:Jump_list_forward()
+	call s:Jump_list_fix()
+
+	if ( s:Jump_list_idx + 1 ) > ( len( s:Jump_list ) - 1 )
+		let s:infomsg .= ' At end of jump list'
+		return
+	endif
+
+	let s:Keep_jumps = 1
+
+	let idx = s:Jump_list_idx + 1
+
+	" Get the next idx, and clear until an idx matching
+	"
+	while len( s:Jump_list ) > 0
+
+		let idx = s:Jump_list_clean_and_go( s:Jump_list_idx + 1 )
+
+		if idx > -1 
+		\ && s:Locations_duplicates( s:Jump_list[ s:Jump_list_idx ], s:Jump_list[ idx ] )
+			call remove( s:Jump_list, idx )
+			if idx < ( len( s:Jump_list ) - 1 )
+				continue
 			endif
-		else
-			"let s:infomsg .= ' Clearing jump #' . s:Jump_list_idx . ', '
-			"\ . 'valid=' . string( w:Jump_list_valid )
-			if g:WinWalker_debug =~ 'jumplist' | echomsg 'removing2 ' . string(elem) . ',idx:' . s:Jump_list_idx| endif
-				"echomsg 'removing2 ' . string(elem) . ',idx:' . s:Jump_list_idx . ', valid jumps: ' . string( w:Jump_list_valid )
-							"\. ', get=' . get( w:Jump_list_valid, s:Jump_list_idx  )
-
-			call remove( s:Jump_list, s:Jump_list_idx )
 		endif
+
+		if idx > ( len( s:Jump_list ) - 1 )
+			let s:Jump_list_idx = ( len( s:Jump_list ) - 1 )
+			let s:infomsg .= ' At end of jump list'
+			let s:Keep_jumps = 0
+			call s:Jump_list_fix()
+			return -1
+		endif
+
+		if idx > -1  | break | endif	" success
+
 	endwhile
 
-	let s:infomsg .= ' At start of jump list'
+	let s:Jump_list_idx = idx
+	let s:Keep_jumps = 0
+
+	let loc = s:Jump_list[ s:Jump_list_idx ]
+	let s:infomsg .= ' At jump # ' . s:Jump_list_idx
+	if g:WinWalker_debug =~ 'jumplist' 
+		let s:infomsg .= ', t' . loc.tabnr 
+						\ . ', w' . loc.winnr
+						\ . ', name=' . fnamemodify( bufname( loc.bufnr ), ':t' )
+	endif
+
+	if s:Jump_list_idx == ( len( s:Jump_list ) - 1 )
+		let s:infomsg .= ',END '
+	endif
+
 endfunction
+
+
+
+function! s:Jump_list_backward()
+
+	call s:Jump_list_fix()
+
+	if s:Jump_list_idx == 0
+		let s:infomsg .= ' At start of jump list'
+		return
+	endif
+
+	let s:Keep_jumps = 1
+
+	let idx_old = s:Jump_list_idx
+
+	while len( s:Jump_list ) > 1
+
+		let idx = s:Jump_list_idx - 1
+
+		let ret_idx = s:Jump_list_clean_and_go( idx )
+		
+		if ret_idx > 0 && ret_idx != ( s:Jump_list_idx - 1 )
+			" a jump has been removed, and s:Jump_list_idx has changed
+			continue
+		endif
+
+		if ret_idx > -1
+		\ && s:Locations_duplicates( s:Jump_list[ s:Jump_list_idx ], s:Jump_list[ ret_idx ] )
+			call remove( s:Jump_list, ret_idx )
+			let s:Jump_list_idx -= 1
+			continue
+		endif
+
+		if idx == 0 && ret_idx < 0
+			let s:infomsg .= ' At start of jump list'
+			let s:Keep_jumps = 0
+			call s:Jump_list_fix()
+			return -1
+		endif
+
+		if ret_idx > -1  
+			break 
+		endif	" success
+
+	endwhile
+
+	call s:Jump_list_fix()
+
+	if exists('ret_idx')
+		let s:Jump_list_idx = ret_idx
+	endif
+
+
+	let loc = s:Jump_list[ s:Jump_list_idx ]
+	let s:infomsg .= ' At jump # ' . s:Jump_list_idx
+	if g:WinWalker_debug =~ 'jumplist' 
+		let s:infomsg .= ', t' . loc.tabnr 
+						\ . ', w' . loc.winnr
+						\ . ', name=' . fnamemodify( bufname( loc.bufnr ), ':t' )
+	endif
+
+	let s:Keep_jumps = 0
+
+endfunction
+
+
+
 
 
 
@@ -4182,60 +4454,124 @@ endfunction
 function! WinWalker_show_jump_list()
 	echon "\n"
 	echon "WinWalker jump list.\n"
-	echon s:Pad( ' #', 5 ) 
-				\ . ' ' .  s:Pad( 'Tab', 4 ) 
-				\ . ' ' .  s:Pad( 'Win', 4 ) 
-				\ . " Buf\n"
+
+	let fmt = '%1s %-5.5s %-5.5s %-5.5s %-5.5s %-5.5s %s' . "\n"
+
+	echohl DiffChange
+	echon printf( fmt, '', 'Jump', 'Tab', 'Win', 'WinId', 'Buf', 'Name' )
+	echohl NONE
+
+	hi Underlinedx cterm=underline term=underline gui=underline
 	let i = len( s:Jump_list ) - 1
 	while i >= 0
-		echon s:Pad( ( i == s:Jump_list_idx ? '>' : ' ' ) . i, 5 ) . "  "
-					\ . s:Pad( s:Jump_list[i].tabnr, 4 ) . " "
-					\ . s:Pad( s:Jump_list[i].winnr, 4 ) . " "
-					\ . bufname(s:Jump_list[i].bufnr) . " "
-		"if s:Jump_list[i].tabnr == tabpagenr()
-			"echon string( getwinvar( 
-							"\ s:Jump_list[i].winnr, 'Jump_list_valid' ) )
-		"endif
-		echon "\n"
-		let i-= 1
-	endwhile
-	let jumpnum = input( "\nEnter jump # : " )
 
-	if jumpnum =~ '\d\+'
-		let jumpnum = str2nr( jumpnum )
-		let s:infomsg .= ' Jumping to ' . string( s:Jump_list[ jumpnum ] )
-		let s:Keep_jumps = 1
-		exe 'silent tabnext '  . s:Jump_list[ jumpnum ].tabnr
-		exe 'silent ' . s:Jump_list[ jumpnum ].winnr . ' wincmd w '
-		let s:Keep_jumps = 0
-		call WinWalker_BufEnter()
-		redraw
+		if i == s:Jump_list_idx
+			echohl Tag
+		elseif i % 2 == 0
+			echohl Underlinedx
+		else
+			echohl NONE
+		endif
+		echon printf( fmt
+					\ , i == s:Jump_list_idx ? '>' : ' ' 
+					\ , i
+					\ , s:Jump_list[i].tabnr
+					\ , s:Jump_list[i].winnr
+					\ , s:Jump_list[i].winid
+					\ , s:Jump_list[i].bufnr
+					\ , fnamemodify( bufname(s:Jump_list[i].bufnr), ':t' )
+					\ )
+
+		let i -= 1
+
+	endwhile
+
+	echohl NONE
+
+	let inp = input( "\nEnter {#} or {d}elete [{# list/range}] : " )
+	let inp = substitute( inp, '\s*-\s*', '-', 'g' )
+	let l = split( inp, '[ ,]\+' )
+
+	if len( l ) < 1
+		return
 	endif
 
-	"call Clear_cmd_window()
-endfunction
-
-
-
-" Clean up the list.  Doesn't do a complete job yet.
-"
-function! s:Add_valid( l, i )
-	let d = {}
-	for elem in a:l
-		"if elem <= a:i
-		if elem <= len( s:Jump_list )
-			let d[ elem ] = 1
+	if l[0] =~ '^d' 
+		call remove( l, 0 )
+		if len( l ) == 0
+			call remove( s:Jump_list, s:Jump_list_idx )
+		else
+			let del = {}
+			for jumpnr in range( len( s:Jump_list ) )
+				let del[ jumpnr ] = 0
+			endfor
+			for jumpnr in l
+				let start = jumpnr
+				let stop = jumpnr
+				let l1 = split( jumpnr, '-' )
+				if len( l1 ) == 2
+					let start = l1[0]
+					let stop = l1[1]
+				elseif len( l1 ) > 2
+					let s:errmsg .= 'Invalid jump #' . jumpnr
+					return
+				endif
+				for jumpnr1 in range( start, stop )
+					try
+						let del[ jumpnr1 ] = 1
+					catch
+					endtry
+				endfor
+			endfor
+			let l = []
+			for jumpnr in range( len( s:Jump_list ) )
+				if del[ jumpnr ] != 1
+					call add( l, s:Jump_list[ jumpnr ] )
+				endif
+			endfor
+			let s:Jump_list = deepcopy( l )
 		endif
-	endfor
-	let d[ a:i ] = 1
-	return keys( d )
+		call s:Jump_list_fix()
+
+		call WinWalker_show_jump_list()
+
+		call s:Jump_list_fix()
+		call s:Go_to_location( s:Jump_list[ s:Jump_list_idx ] )
+		return
+	else
+		let jumpnr = str2nr( inp )
+	endif
+
+
+	if inp == ''
+	elseif jumpnr >= 0 && jumpnr <= ( len( s:Jump_list ) - 1 )
+
+		let s:infomsg .= ' Jumping to ' . string( s:Jump_list[ jumpnr ] )
+
+		let s:Keep_jumps = 1
+
+		if s:Jump_list_clean_and_go( jumpnr ) > -1
+			let s:Jump_list_idx = jumpnr
+			call WinWalker_BufEnter()
+		else
+			let s:errmsg .= 'Failed to jump to #' . jumpnr
+		endif
+
+		let s:Keep_jumps = 0
+		redraw
+	else
+		let s:errmsg .= 'Invalid jump #' . jumpnr
+	endif
+
 endfunction
+
+
+
 
 
 
 " Jump funcs                                                        }}}
 " ----------------------------------------------------------------------
-
 
 
 
@@ -4315,64 +4651,87 @@ endfunction
 
 
 function! WinWalker_BufEnter()
-	if g:WinWalker_debug =~ 'events' | echomsg 'BufEnter @%=' . @% . ', afile=' . expand("<afile>") | endif
+	if g:WinWalker_debug =~ 'events' 
+		let s:infomsg .= " BFE"
+		echomsg 'BufEnter @%=' . @% . ', afile=' . expand("<afile>") 
+	endif
+
 	call s:WinWalker_resize_fixed()
 
 	if exists( 's:O_temp_win' ) | unlet s:O_temp_win | endif
 
-	if s:Keep_jumps	| return | endif
+	if s:Keep_jumps	
+		if g:WinWalker_debug =~ 'jumplist' 
+			echomsg 'bufenter returning because of keep jumps list '
+		endif
+		return 
+	endif
 
-	let elem =  {
-				\ "tabnr" : tabpagenr(),
-				\ "winnr" : winnr(),
-				\ "bufnr" : bufnr("%"),
-				\ "line" : 0,
-				\ "col" : 0,
-				\ }
+	let elem = s:Get_curr_location() 
 
-	if !exists( 'w:Jump_list_valid' )
-		let w:Jump_list_valid = []
-	else
-		"let s:infomsg .= ' ' . string( w:Jump_list_valid )
+	" Remove build-up of next/prev couples between two windows:
+	if len( s:Jump_list ) > 2
+		if s:Locations_duplicates( s:Jump_list[ s:Jump_list_idx ], s:Jump_list[ s:Jump_list_idx - 2] )
+			call remove( s:Jump_list, s:Jump_list_idx - 2 )
+			let s:Jump_list_idx -= 1
+		endif
 	endif
 
 	if len( s:Jump_list ) < 1
 
+		if g:WinWalker_debug =~ 'jumplist' 
+			echomsg 'bufenter jump list empty, adding'
+		endif
+		call s:Jump_list_fix()
+
+	elseif s:Jump_list_idx >= ( len( s:Jump_list ) - 1 )
+
+		if g:WinWalker_debug =~ 'jumplist' 
+			echomsg 'bufenter growing jump list '
+		endif
 		call add( s:Jump_list, elem )
-		let s:Jump_list_idx = 0
-		let w:Jump_list_valid = s:Add_valid( w:Jump_list_valid, s:Jump_list_idx )
+		let s:Jump_list_idx = ( len( s:Jump_list ) - 1 )
 
 	elseif s:Jump_list_idx < ( len( s:Jump_list ) - 1 )
+		"
 		" Means that that we're somewhere in the jumplist via ^I or ^O
 
-		if 				tabpagenr()	== s:Jump_list[ s:Jump_list_idx ].tabnr
-				\ &&	winnr()		== s:Jump_list[ s:Jump_list_idx ].winnr
-				"\ &&	bufnr("%")	== s:Jump_list[ s:Jump_list_idx ].bufnr
+		if				tabpagenr()	== s:Jump_list[ s:Jump_list_idx ].tabnr
+					\ &&	winnr()		== s:Jump_list[ s:Jump_list_idx ].winnr
+					\ &&	s:winid()	== s:Jump_list[ s:Jump_list_idx ].winid
 			" Haven't deviated from list.
+			if g:WinWalker_debug =~ 'jumplist' 
+				echomsg 'bufenter keep existing jump # ' . s:Jump_list_idx 
+			endif
 			return
-		else
-			" Have deviated from list, so start it afresh from here.
-			if g:WinWalker_debug =~ 'jumplist' | echomsg 'removing jump #' . s:Jump_list_idx | endif
-			call remove( s:Jump_list, s:Jump_list_idx + 1, -1)
-			call add( s:Jump_list, elem )
-			let s:Jump_list_idx = max( [0, len( s:Jump_list ) - 1 ] )
-			let w:Jump_list_valid = 
-						\ s:Add_valid( w:Jump_list_valid, s:Jump_list_idx )
+
 		endif
 
-	elseif 				tabpagenr()	== s:Jump_list[ s:Jump_list_idx ].tabnr
-				\ &&	winnr()		== s:Jump_list[ s:Jump_list_idx ].winnr
-		" Don't add a duplate.
-	else
-		call add( s:Jump_list, elem )
-		let s:Jump_list_idx = max( [0, len( s:Jump_list ) - 1 ] )
-		let w:Jump_list_valid = s:Add_valid( w:Jump_list_valid, s:Jump_list_idx )
+		if g:WinWalker_debug =~ 'jumplist' 
+			echomsg 'bufenter inserting jump # ' . s:Jump_list_idx 
+		endif
+
+		let loc = s:Get_curr_location()
+
+		if s:Locations_duplicates( loc, s:Jump_list[ s:Jump_list_idx ] )
+			" is a duplicate
+		else
+			let s:Jump_list_idx += 1
+			call extend( s:Jump_list, [ s:Get_curr_location() ], s:Jump_list_idx )
+		endif
+
+	else " s:Jump_list_idx  not in proper condition
+		if g:WinWalker_debug =~ 'jumplist' 
+			echomsg 'bufenter:  bad case'
+		endif
 	endif
 
 
 	if len( s:Jump_list ) > 1000
 		call remove( s:Jump_list, 0 )
 		let s:Jump_list_idx -= 1
+		" Should never happen:
+		let s:Jump_list_idx = max( [ s:Jump_list_idx, 0 ] )
 	endif
 
 endfunction
@@ -4395,33 +4754,38 @@ function! WinWalker_BufLeave()
 		let w:Jump_list_valid = []
 	endif
 
-	if len( s:Jump_list ) < 1
-		let s:Jump_list_idx = 0
-		let elem = {}
-		let elem.tabnr = tabpagenr()
-		let elem.winnr = winnr()
-		let elem.bufnr = bufnr("%")
-		call add( s:Jump_list, elem )
-		let w:Jump_list_valid = s:Add_valid( w:Jump_list_valid, 0 )
-	endif
+	call s:Jump_list_fix()
 
-	let elem = s:Jump_list[ s:Jump_list_idx ]
+	let s:Jump_list[ s:Jump_list_idx ] = s:Get_curr_location()
 
-	if			elem.tabnr == tabpagenr()
-		\ &&	elem.winnr == winnr()
-		\ &&	elem.bufnr == bufnr("%")
-		let elem.line = line(".")
-		let elem.col = col(".")
-	endif
+"	let loc = s:Jump_list[ s:Jump_list_idx ]
+"
+"	if		loc.tabnr == tabpagenr()
+"	\ &&	loc.winnr == winnr()
+"
+"		let loc.bufnr	= bufnr("%")
+"		let loc.line	= line(".")
+"		let loc.col		= col(".")
+"
+"		let s:Jump_list[ s:Jump_list_idx ] = loc
+"	endif
 
 endfunction
 
 
 
 
+if !exists( 's:winid_counter' )
+	let s:winid_counter = 0
+endif
+
 function! WinWalker_WinEnter()
-	"let s:infomsg .= " WE"
-	if g:WinWalker_debug =~ 'events' | echomsg 'WinEnter @%=' . @% . ', afile=' . expand("<afile>") | endif
+	if g:WinWalker_debug =~ 'events' 
+		let s:infomsg .= " WE"
+		echomsg 'WinEnter @%=' . @% . ', afile=' . expand("<afile>") 
+	endif
+
+	call s:winid()
 
 	call s:WinWalker_do_attachments()
 
@@ -4647,9 +5011,6 @@ function! s:WinWalker_do_attachments()
 					let need_retry = 1
 					let s:need_window_update = 1
 				endif
-
-				"redraw
-				"call input( s:infomsg . "enter: " )
 
 				let other_winnr = GetWinAdjacent( dir )
 

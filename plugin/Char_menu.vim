@@ -11,9 +11,9 @@
 " Version:		Not individually released yet.
 " Changes:	-	Sun Apr 30, 04/30/2006 5:55:48 AM
 " 				Fixed case handling to follow 'ignorecase'
-" 				
+" 			-	Fri May 26, 05/26/2006 4:14:54 PM
+" 				Fixed problems with returning early on partial selections
 "
-
 "	Features:
 "
 "	=	Forget about forgetting what key does what:  Char_menu,
@@ -48,7 +48,7 @@ let g:CMu_menu_hl_text		= 'Directory'
 let g:CMu_menu_hl_standout	= 'WarningMsg'
 let g:CMu_menu_hl_selection	= 'WildMenu'
 let g:CMu_menu_hl_error		= 'Error'
-let g:CMu_timeoutlen		= 600
+let g:CMu_timeoutlen		= 1000
 
 
 let s:menu_matches_full = 0
@@ -113,15 +113,33 @@ function! Char_menu( menu_str, ... )
 	let l:col = col(".")
 
 
+	let s:menu_matches_full = 0
+	let s:menu_matches_partial = 0
+
 	let l:received_chars = ""
 
 	while 1
 
 		call Char_menu_display( a:menu_str, l:starting_selection )
+
+		if l:received_chars == ''
+		elseif s:menu_matches_full > 0  || s:menu_matches_partial == 1
+			call Peek_char_timeout_wait( g:CMu_timeoutlen )
+			if getchar(1) == 0
+				break
+			endif
+		else
+		endif
 		let l:char = getchar()
 
 		if nr2char( l:char ) != ""
 			let l:char = nr2char( l:char )
+		endif
+
+		if l:char =~ "\\(\<C-H>\\|\<BS>\\)" 
+			let l:received_chars = substitute( l:received_chars, '.$', '', '' )
+			let l:starting_selection = l:received_chars
+			continue
 		endif
 
 		let s:menu_matches_full = 0
@@ -132,6 +150,21 @@ function! Char_menu( menu_str, ... )
 		let l:ret = substitute( a:menu_str . l:hidden_options, '{\([^}]\+\)}'
 							\ , '\=s:Check_menu_submatches()', 'g' )
 
+		"echomsg 'full:' . s:menu_matches_full . ', partial:' . s:menu_matches_partial
+
+
+		" I.e. matched 'w' from both 'w' and 'W'
+		"
+		if s:menu_matches_full > 0 && s:menu_matches_partial == 0
+					\ && &ignorecase == 1
+			set ignorecase!
+			let s:menu_matches_full = 0
+			let s:menu_matches_partial = 0
+			let l:ret = substitute( a:menu_str . l:hidden_options, '{\([^}]\+\)}'
+						\ , '\=s:Check_menu_submatches()', 'g' )
+			set ignorecase!
+		endif
+
 		let l:received_chars = l:received_chars . l:char
 
 		if l:received_chars != ''
@@ -139,41 +172,25 @@ function! Char_menu( menu_str, ... )
 		endif
 
 
-		"call Clear_cmd_window()
-		"redraw
-		"call Char_menu_display( a:menu_str, l:starting_selection )
-
-
+		" Break if nothing matched:
+		"
 		if s:menu_matches_full > 0 || s:menu_matches_partial > 0
 		else 
 			break
 		endif
 
+
+		" Break if one match of eithr type:
+		"
 		if ( s:menu_matches_full == 1 && s:menu_matches_partial == 0 ) 
 			  \ || ( s:menu_matches_full == 0 && s:menu_matches_partial == 1 )
 			break
 		endif
 
-		if strlen( l:received_chars ) > 1
-			"call Clear_cmd_window()
-			"redraw
-			"while getchar(1) == 0 | sleep 100m | endwhile
-		endif
-		"call Char_menu_display( a:menu_str, l:received_chars )
-
-		if s:menu_matches_full > 0  || s:menu_matches_partial == 1
-			call Peek_char_timeout_wait( g:CMu_timeoutlen )
-			if getchar(1) == 0
-				break
-			endif
-		endif
 
 		if l:char != "" && l:hidden_options =~ '{ANY}'
 			let l:received_chars = l:char
 			break
-		endif
-
-		if l:char == "\<BS>" 
 		endif
 
 		" Panic button:
@@ -319,6 +336,8 @@ function! s:Check_menu_submatches( ... )
 
 	let l:item = submatch( 1 )
 
+	"echomsg 'submatch(1) ' . submatch( 1 )
+
 	" translate <TAB> to real tab, etc. using "\<TAB>" to do it:
 	if l:item =~ '<\w\+\>'
 		exe 'let l:item = "\' . l:item . '"'
@@ -333,6 +352,7 @@ function! s:Check_menu_submatches( ... )
 		let s1 = tolower( s1 )
 		let s2 = tolower( s2 )
 	endif
+
 
 	if s1 == s2
 		"echomsg 'match full (' . l:item . ')(' . s:received_chars . ')'
